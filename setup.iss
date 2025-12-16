@@ -1,4 +1,7 @@
 ﻿; Script do Inno Setup para o plugin Nightbot para OBS Studio
+; Para compilar com uma configuração diferente, use: /DBuildConfig=Release
+#define BuildConfig "RelWithDebInfo"
+
 ; Desenvolvido por FabioZumbi12
 
 [Setup]
@@ -14,16 +17,16 @@ AppUpdatesURL=https://github.com/FabioZumbi12/NightbotSR-ObsPlugin/releases
 ; DefaultDirName será sobrescrito pela seção [Code] para o caminho do OBS Studio.
 DefaultDirName={autopf}\obs-studio
 ; O nome do executável final do setup.
-OutputDir=setup
-OutputBaseFilename=NightbotSRObsPlugin-Setup
+OutputDir=build_x64\{#BuildConfig}
+OutputBaseFilename=nightbotsr-obs-plugin-setup
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
 ; Privilégios de administrador são necessários para escrever na pasta 'Arquivos de Programas'.
 PrivilegesRequired=admin
 DirExistsWarning=no
-UninstallFilesDir={app}\NightbotSRObsPlugin-Uninstaller
-UninstallDisplayName=NightbotSRObsPlugin-Uninstaller
+UninstallFilesDir={app}\nightbotsr-obs-plugin-uninstaller
+UninstallDisplayName=nightbotsr-obs-plugin-uninstaller
 SetupIconFile=img\nightbot.ico
 UninstallDisplayIcon={uninstallexe}
 
@@ -41,7 +44,7 @@ brazilianportuguese.LaunchOBS=Iniciar OBS Studio agora
 
 [Files]
 ; Copia a DLL do plugin para a pasta de plugins do OBS.
-Source: "build_x64\RelWithDebInfo\nightbotsr-obs-plugin.dll"; DestDir: "{app}\obs-plugins\64bit\"; Flags: ignoreversion
+Source: "build_x64\{#BuildConfig}\nightbotsr-obs-plugin.dll"; DestDir: "{app}\obs-plugins\64bit\"; Flags: ignoreversion
 
 ; Copia a pasta 'data' do plugin para a pasta de dados do OBS.
 Source: "data\locale\*.ini"; DestDir: "{app}\data\obs-plugins\nightbotsr-obs-plugin\locale\"; Flags: ignoreversion recursesubdirs createallsubdirs

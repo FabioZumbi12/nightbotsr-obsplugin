@@ -1,3 +1,13 @@
+#  Nightbot SR Plugin for OBS - CMake Build Configuration
+#  This CMake configuration file sets up the build process.
+#  It includes options for enabling the obs-frontend-api and Qt functionalities,
+#  and specifies custom output directories for the built plugin and its associated data.
+#
+#  If the build fail (the folder build_x64 don't exists), run on terminal: cmake --preset windows-x64
+#
+#  For buils on github, push tags:
+#  - git tag v1.0.0
+#  - git push origin --tags
 cmake_minimum_required(VERSION 3.28...3.30)
 
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/common/bootstrap.cmake" NO_POLICY_SCOPE)
@@ -45,8 +55,8 @@ set(INNO_SETUP_COMPILER "C:/Program Files (x86)/Inno Setup 6/ISCC.exe")
 
 if(ENABLE_INNO_SETUP AND EXISTS "${INNO_SETUP_COMPILER}")
         add_custom_command(TARGET ${_name} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E echo "Executando Inno Setup..."
-        COMMAND "${INNO_SETUP_COMPILER}" "${CMAKE_SOURCE_DIR}/setup.iss"
+        COMMAND ${CMAKE_COMMAND} -E echo "Executando Inno Setup como $<CONFIG>..."
+        COMMAND "${INNO_SETUP_COMPILER}" "${CMAKE_SOURCE_DIR}/setup.iss" "/DBuildConfig=$<CONFIG>"
         WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
         COMMENT "Criando instalador ${_name}-Setup.exe (opcional)..."
     )
@@ -57,3 +67,11 @@ endif()
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE src/plugin-main.c)
 
 set_target_properties_plugin(${CMAKE_PROJECT_NAME} PROPERTIES OUTPUT_NAME ${_name})
+
+install(
+  TARGETS ${CMAKE_PROJECT_NAME}
+  RUNTIME DESTINATION "obs-plugins/64bit"
+  LIBRARY DESTINATION "obs-plugins/64bit"
+)
+
+install(DIRECTORY data/ DESTINATION "data/obs-plugins/${_name}")
