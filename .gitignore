@@ -1,0 +1,39 @@
+# Ignore CMake build directories
+build/
+release/
+debug/
+install/
+
+# Ignore dependencies folder
+.deps/
+
+# Ignore user-specific files from IDEs
+*.user
+*.suo
+
+# Ignore Visual Studio Code specific files
+.vscode/
+
+# Ignore Qt Creator specific files
+*.creator
+
+# Ignore lock files
+*.lock
+*.lock.json
+
+# Ignore macOS specific files
+.DS_Store
+
+# Ignore compiled binaries and libraries
+*.dll
+*.exe
+*.so
+*.a
+*.lib
+*.o
+*.obj
+
+.vs/
+build_*/
+setup/
+.CMakeBuildNumber
