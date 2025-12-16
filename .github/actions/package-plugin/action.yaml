@@ -47,6 +47,11 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Make package scripts executable
+      if: runner.os == 'Linux' || runner.os == 'macOS'
+      shell: bash
+      run: chmod +x .github/scripts/package-${{ runner.os == 'Linux' && 'ubuntu' || 'macos' }}
+
     - name: Run macOS Packaging
       if: runner.os == 'macOS'
       shell: zsh --no-rcs --errexit --pipefail {0}

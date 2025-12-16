@@ -1,59 +1,49 @@
-# OBS Plugin Template
+[Read this in Portuguese (Português)](README.pt-BR.md)
+
+# Nightbot Plugin for OBS Studio
 
 ## Introduction
 
-The plugin template is meant to be used as a starting point for OBS Studio plugin development. It includes:
+This is a plugin for OBS Studio that integrates Nightbot's *Song Request* system directly into the OBS interface. It adds a new dockable panel (Dock) that allows you to view and manage the queue of songs requested by your Twitch viewers, without needing to switch to a web browser.
 
-* Boilerplate plugin source code
-* A CMake project file
-* GitHub Actions workflows and repository actions
+## Features
 
-## Supported Build Environments
+*   **Queue Visualization:** See the list of songs currently in the Nightbot queue.
+*   **Playback Control:** Control the current song (play, pause, skip).
+*   **Queue Management:** Promote songs to the top of the list or remove them.
+*   **Full Integration:** Everything is done within a dockable panel in OBS Studio.
 
-| Platform  | Tool   |
-|-----------|--------|
-| Windows   | Visual Studio 17 2022 |
-| macOS     | XCode 16.0 |
-| Windows, macOS  | CMake 3.30.5 |
-| Ubuntu 24.04 | CMake 3.28.3 |
-| Ubuntu 24.04 | `ninja-build` |
-| Ubuntu 24.04 | `pkg-config`
-| Ubuntu 24.04 | `build-essential` |
+## Installation
 
-## Quick Start
+1.  Download the installer (`.exe`) from the Releases page.
+2.  Run the installer. It will try to automatically locate your OBS Studio installation folder.
+3.  After installation, start OBS Studio.
 
-An absolute bare-bones [Quick Start Guide](https://github.com/obsproject/obs-plugintemplate/wiki/Quick-Start-Guide) is available in the wiki.
+## How to Use
 
-## Documentation
+1.  With OBS Studio open, go to the **Docks** menu.
+2.  Click on the **"Nightbot"** option to activate the plugin's dock.
+3.  A new panel will appear. You can position it wherever you prefer in the OBS interface.
+4.  Log in with your Nightbot account to load and manage your song queue.
 
-All documentation can be found in the [Plugin Template Wiki](https://github.com/obsproject/obs-plugintemplate/wiki).
+## Building from Source
 
-Suggested reading to get up and running:
+If you want to build the plugin manually, follow the steps below.
 
-* [Getting started](https://github.com/obsproject/obs-plugintemplate/wiki/Getting-Started)
-* [Build system requirements](https://github.com/obsproject/obs-plugintemplate/wiki/Build-System-Requirements)
-* [Build system options](https://github.com/obsproject/obs-plugintemplate/wiki/CMake-Build-System-Options)
+### Requirements
+*   Git
+*   CMake (version 3.28 or higher)
+*   Visual Studio 2022 (with the "Desktop development with C++" workload)
+*   OBS Studio dependencies
 
-## GitHub Actions & CI
+### Steps
+1.  Clone the repository:
+    `git clone --recursive https://github.com/FabioZumbi12/Nightbot-ObsPlugin.git`
+2.  Create a build directory: `mkdir build && cd build`
+3.  Run CMake to generate the project files: `cmake ..`
+4.  Compile the project using Visual Studio or directly from the command line: `cmake --build . --config RelWithDebInfo`
 
-Default GitHub Actions workflows are available for the following repository actions:
+## Contributions
 
-* `push`: Run for commits or tags pushed to `master` or `main` branches.
-* `pr-pull`: Run when a Pull Request has been pushed or synchronized.
-* `dispatch`: Run when triggered by the workflow dispatch in GitHub's user interface.
-* `build-project`: Builds the actual project and is triggered by other workflows.
-* `check-format`: Checks CMake and plugin source code formatting and is triggered by other workflows.
+Contributions are welcome! Feel free to open an *issue* to report problems or suggest new features, or submit a *pull request* with improvements.
 
-The workflows make use of GitHub repository actions (contained in `.github/actions`) and build scripts (contained in `.github/scripts`) which are not needed for local development, but might need to be adjusted if additional/different steps are required to build the plugin.
-
-### Retrieving build artifacts
-
-Successful builds on GitHub Actions will produce build artifacts that can be downloaded for testing. These artifacts are commonly simple archives and will not contain package installers or installation programs.
-
-### Building a Release
-
-To create a release, an appropriately named tag needs to be pushed to the `main`/`master` branch using semantic versioning (e.g., `12.3.4`, `23.4.5-beta2`). A draft release will be created on the associated repository with generated installer packages or installation programs attached as release artifacts.
-
-## Signing and Notarizing on macOS
-
-Basic concepts of codesigning and notarization on macOS are explained in the correspodning [Wiki article](https://github.com/obsproject/obs-plugintemplate/wiki/Codesigning-On-macOS) which has a specific section for the [GitHub Actions setup](https://github.com/obsproject/obs-plugintemplate/wiki/Codesigning-On-macOS#setting-up-code-signing-for-github-actions).

@@ -33,11 +33,11 @@
     },
     "platformConfig": {
         "macos": {
-            "bundleId": "com.github.FabioZumbi12.nightbot-obs-plugin"
+            "bundleId": "com.github.FabioZumbi12.nightbotsr-obs-plugin"
         }
     },
-    "name": "nightbot-obs-plugin",
-    "displayName": "Nightbot Plugin for OBS",
+    "name": "nightbotsr-obs-plugin",
+    "displayName": "Nightbot SR Plugin for OBS",
     "version": "0.0.1",
     "author": "FabioZumbi12",
     "website": "https://example.com",

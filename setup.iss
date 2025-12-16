@@ -3,27 +3,27 @@
 
 [Setup]
 ; --- Informações Básicas do Aplicativo ---
-AppName=Nightbot OBS Plugin
+AppName=Nightbot SR OBS Plugin
 AppVersion=1.0.0
 AppPublisher=FabioZumbi12
-AppPublisherURL=https://github.com/FabioZumbi12/Nightbot-ObsPlugin
-AppSupportURL=https://github.com/FabioZumbi12/Nightbot-ObsPlugin/issues
-AppUpdatesURL=https://github.com/FabioZumbi12/Nightbot-ObsPlugin/releases
+AppPublisherURL=https://github.com/FabioZumbi12/NightbotSR-ObsPlugin
+AppSupportURL=https://github.com/FabioZumbi12/NightbotSR-ObsPlugin/issues
+AppUpdatesURL=https://github.com/FabioZumbi12/NightbotSR-ObsPlugin/releases
 
 ; --- Opções do Instalador ---
 ; DefaultDirName será sobrescrito pela seção [Code] para o caminho do OBS Studio.
 DefaultDirName={autopf}\obs-studio
 ; O nome do executável final do setup.
 OutputDir=setup
-OutputBaseFilename=NightbotObsPlugin-Setup
+OutputBaseFilename=NightbotSRObsPlugin-Setup
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
 ; Privilégios de administrador são necessários para escrever na pasta 'Arquivos de Programas'.
 PrivilegesRequired=admin
 DirExistsWarning=no
-UninstallFilesDir={app}\NightbotObsPlugin-Uninstaller
-UninstallDisplayName=NightbotObsPlugin-Uninstaller
+UninstallFilesDir={app}\NightbotSRObsPlugin-Uninstaller
+UninstallDisplayName=NightbotSRObsPlugin-Uninstaller
 SetupIconFile=img\nightbot.ico
 UninstallDisplayIcon={uninstallexe}
 
@@ -41,10 +41,10 @@ brazilianportuguese.LaunchOBS=Iniciar OBS Studio agora
 
 [Files]
 ; Copia a DLL do plugin para a pasta de plugins do OBS.
-Source: "build_x64\RelWithDebInfo\nightbot-obs-plugin.dll"; DestDir: "{app}\obs-plugins\64bit\"; Flags: ignoreversion
+Source: "build_x64\RelWithDebInfo\nightbotsr-obs-plugin.dll"; DestDir: "{app}\obs-plugins\64bit\"; Flags: ignoreversion
 
 ; Copia a pasta 'data' do plugin para a pasta de dados do OBS.
-Source: "data\locale\*.ini"; DestDir: "{app}\data\obs-plugins\nightbot-obs-plugin\locale\"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "data\locale\*.ini"; DestDir: "{app}\data\obs-plugins\nightbotsr-obs-plugin\locale\"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Run]
 ; Opcional: Oferece a opção de abrir o OBS Studio após a instalação.
@@ -52,8 +52,8 @@ Filename: "{app}\bin\64bit\obs64.exe"; Description: "{cm:LaunchOBS}"; Flags: now
 
 [UninstallDelete]
 ; Garante que todos os arquivos e pastas sejam removidos na desinstalação.
-Type: files; Name: "{app}\obs-plugins\64bit\nightbot-obs-plugin.dll"
-Type: filesandordirs; Name: "{app}\data\obs-plugins\nightbot-obs-plugin"
+Type: files; Name: "{app}\obs-plugins\64bit\nightbotsr-obs-plugin.dll"
+Type: filesandordirs; Name: "{app}\data\obs-plugins\nightbotsr-obs-plugin"
 
 [Code]
 var
@@ -84,7 +84,7 @@ var
 begin
   if CurUninstallStep = usPostUninstall then
   begin
-    TargetDir := ExpandConstant('{userappdata}\obs-studio\plugin_config\nightbot-obs-plugin');
+    TargetDir := ExpandConstant('{userappdata}\obs-studio\plugin_config\nightbotsr-obs-plugin');
 
     if DirExists(TargetDir) then
     begin
