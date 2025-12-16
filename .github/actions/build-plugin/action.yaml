@@ -27,9 +27,10 @@ inputs:
 runs:
   using: composite
   steps:
-    # Fix executable permissions for macOS build script
-    - name: Make build script executable
-      run: chmod +x .github/scripts/build-macos
+    - name: Make build scripts executable
+      if: runner.os == 'Linux' || runner.os == 'macOS'
+      shell: bash
+      run: chmod +x .github/scripts/build-${{ runner.os == 'Linux' && 'ubuntu' || 'macos' }}
 
     - name: Run macOS Build
       if: runner.os == 'macOS'
@@ -59,10 +60,6 @@ runs:
         echo "/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin" >> $GITHUB_PATH
         brew install --quiet zsh
         echo ::endgroup::
-
-    # Fix executable permissions for Ubuntu build script
-    - name: Make build script executable
-      run: chmod +x .github/scripts/build-ubuntu
 
     - name: Run Ubuntu Build
       if: runner.os == 'Linux'
