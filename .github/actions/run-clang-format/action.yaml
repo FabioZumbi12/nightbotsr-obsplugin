@@ -39,6 +39,10 @@ runs:
         brew install --quiet zsh
         echo ::endgroup::
 
+    - name: Make build scripts executable
+      shell: bash
+      run: chmod +x ./build-aux/run-clang-format
+
     - name: Run clang-format 🐉
       if: fromJSON(steps.checks.outputs.hasChangedFiles)
       id: result
