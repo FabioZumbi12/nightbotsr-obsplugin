@@ -132,7 +132,7 @@ void NightbotDock::UpdateRefreshTimer()
 void NightbotDock::UpdateSongQueue(const QList<SongItem> &queue)
 {
 	songQueueTable->clearContents();
-	songQueueTable->setRowCount(queue.size());
+	songQueueTable->setRowCount(static_cast<int>(queue.size()));
 
 	std::string sourceName = SettingsManager::get().GetNowPlayingSource();
 	obs_source_t *textSource = nullptr;
@@ -165,8 +165,8 @@ void NightbotDock::UpdateSongQueue(const QList<SongItem> &queue)
 		obs_log_warning("[Nightbot SR/Dock] Now playing source '%s' not found.", sourceName.c_str());
 	}
 
-	for (int i = 0; i < queue.size(); ++i) {
-		const SongItem &item = queue.at(i);
+	for (qsizetype i = 0; i < queue.size(); ++i) {
+		const SongItem &item = queue.at(static_cast<int>(i));
 
 		int minutes = item.duration / 60;
 		int seconds = item.duration % 60;
@@ -216,14 +216,14 @@ void NightbotDock::UpdateSongQueue(const QList<SongItem> &queue)
 			actionsLayout->addWidget(deleteButton);
 			actionsWidget->setLayout(actionsLayout);
 
-			songQueueTable->setCellWidget(i, 3, actionsWidget);
+			songQueueTable->setCellWidget(static_cast<int>(i), 3, actionsWidget);
 		}
 
 		posItem->setTextAlignment(Qt::AlignCenter);
 		userItem->setTextAlignment(Qt::AlignCenter);
-		songQueueTable->setItem(i, 0, posItem);
-		songQueueTable->setItem(i, 1, titleItem);
-		songQueueTable->setItem(i, 2, userItem);
+		songQueueTable->setItem(static_cast<int>(i), 0, posItem);
+		songQueueTable->setItem(static_cast<int>(i), 1, titleItem);
+		songQueueTable->setItem(static_cast<int>(i), 2, userItem);
 
 	}
 }

@@ -121,7 +121,7 @@ void SettingsManager::SetAutoRefreshInterval(int interval)
 
 int SettingsManager::GetAutoRefreshInterval()
 {
-	return obs_data_get_int(settings, Setting::AutoRefreshInterval);
+	return static_cast<int>(obs_data_get_int(settings, Setting::AutoRefreshInterval));
 }
 
 void SettingsManager::SetAutoRefreshEnabled(bool enabled)

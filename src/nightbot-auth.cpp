@@ -246,7 +246,7 @@ void NightbotAuth::onNewConnection()
 		}
 
 		if (method == "POST" && path == "/token") {
-			int bodyIndex = request.indexOf("\r\n\r\n");
+			qsizetype bodyIndex = request.indexOf("\r\n\r\n");
 			if (bodyIndex == -1) {
 				QString httpResponse = "HTTP/1.1 400 Bad Request\r\nAccess-Control-Allow-Origin: *\r\n\r\n";
 				clientSocket->write(httpResponse.toUtf8());
