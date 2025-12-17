@@ -30,6 +30,11 @@ target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE OBS::libobs)
 find_package(CURL REQUIRED)
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE CURL::libcurl)
 
+target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
+    SIMDE_DISABLE_NATIVE_ALIASES
+    SIMDE_NO_NATIVE
+)
+
 if(ENABLE_FRONTEND_API)
   find_package(obs-frontend-api REQUIRED)
   target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE OBS::obs-frontend-api)

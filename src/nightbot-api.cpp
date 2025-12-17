@@ -112,7 +112,7 @@ void NightbotAPI::FetchUserInfo()
 				emit userInfoFetched("");
 				return;
 			}
-			
+
 			QJsonObject rootObj = doc.object();
 			if (rootObj.contains("user") && rootObj.value("user").isObject()) {
 				QJsonObject userObj = rootObj.value("user").toObject();
