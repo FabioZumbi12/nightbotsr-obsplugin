@@ -127,3 +127,13 @@ void SettingsManager::SetAutoRefreshEnabled(bool enabled)
 	obs_data_set_bool(settings, Setting::AutoRefreshEnabled, enabled);
 	Save();
 }
+
+obs_data_array_t *SettingsManager::GetHotkeyData(const char *key) const
+{
+	return obs_data_get_array(settings, key);
+}
+
+void SettingsManager::SetHotkeyData(const char *key, obs_data_array_t *hotkeyArray)
+{
+	obs_data_set_array(settings, key, hotkeyArray);
+}

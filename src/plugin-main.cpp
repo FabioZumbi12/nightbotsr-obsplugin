@@ -30,8 +30,75 @@ with this program. If not, see <https://www.gnu.org/licenses/>
 #include "SettingsManager.h"
 #include <curl/curl.h>
 
+static obs_hotkey_id g_nightbot_resume_hotkey_id;
+static obs_hotkey_id g_nightbot_pause_hotkey_id;
+static obs_hotkey_id g_nightbot_skip_hotkey_id;
+
+#define HOTKEY_PAUSE_ID "nightbot_sr.pause"
+#define HOTKEY_RESUME_ID "nightbot_sr.resume"
+#define HOTKEY_SKIP_ID "nightbot_sr.skip"
+
 OBS_DECLARE_MODULE()
 OBS_MODULE_USE_DEFAULT_LOCALE(PLUGIN_NAME, "en-US")
+MODULE_EXPORT const char *obs_module_description(void)
+{
+	return "Nightbot Song Request integration for OBS Studio";
+}
+
+static void save_hotkeys(obs_data_t *save_data, bool saving, void *private_data)
+{
+	Q_UNUSED(save_data);
+	Q_UNUSED(saving);
+	Q_UNUSED(private_data);
+
+	obs_data_array_t *resume_hotkey = obs_hotkey_save(g_nightbot_resume_hotkey_id);
+	SettingsManager::get().SetHotkeyData(HOTKEY_RESUME_ID, resume_hotkey);
+	obs_data_array_release(resume_hotkey);
+
+	obs_data_array_t *pause_hotkey = obs_hotkey_save(g_nightbot_pause_hotkey_id);
+	SettingsManager::get().SetHotkeyData(HOTKEY_PAUSE_ID, pause_hotkey);
+	obs_data_array_release(pause_hotkey);
+
+	obs_data_array_t *skip_hotkey = obs_hotkey_save(g_nightbot_skip_hotkey_id);
+	SettingsManager::get().SetHotkeyData(HOTKEY_SKIP_ID, skip_hotkey);
+	obs_data_array_release(skip_hotkey);
+
+	SettingsManager::get().Save();
+}
+
+// --- Hotkey callbacks ---
+static void hotkey_pause_song(void *data, obs_hotkey_id id, obs_hotkey_t *hotkey, bool pressed)
+{
+	Q_UNUSED(data);
+	Q_UNUSED(id);
+	Q_UNUSED(hotkey);
+	if (pressed) {
+		blog(LOG_INFO, "Pause hotkey pressed");
+		NightbotAPI::get().ControlPause();
+	}
+}
+
+static void hotkey_resume_song(void *data, obs_hotkey_id id, obs_hotkey_t *hotkey, bool pressed)
+{
+	Q_UNUSED(data);
+	Q_UNUSED(id);
+	Q_UNUSED(hotkey);
+	if (pressed) {
+		blog(LOG_INFO, "Resume hotkey pressed");
+		NightbotAPI::get().ControlPlay();
+	}
+}
+
+static void hotkey_skip_song(void *data, obs_hotkey_id id, obs_hotkey_t *hotkey, bool pressed)
+{
+	Q_UNUSED(data);
+	Q_UNUSED(id);
+	Q_UNUSED(hotkey);
+	if (pressed) {
+		blog(LOG_INFO, "Skip hotkey pressed");
+		NightbotAPI::get().ControlSkip();
+	}
+}
 
 NightbotDock *g_dock_widget = nullptr;
 
@@ -40,6 +107,11 @@ static void show_settings_dialog(void *private_data)
     Q_UNUSED(private_data);
 	NightbotSettingsDialog dialog(static_cast<QWidget *>(obs_frontend_get_main_window()));
 	dialog.exec();
+}
+
+const char *obs_module_get_name(void)
+{
+	return obs_module_text("Nightbot.PluginName");
 }
 
 bool obs_module_load(void)
@@ -61,16 +133,47 @@ bool obs_module_load(void)
 		NightbotAPI::get().FetchSongQueue();
 	}
 
-	obs_log(LOG_INFO, "plugin loaded successfully (version %s)", PLUGIN_VERSION);
+	// Register hotkeys
+	g_nightbot_resume_hotkey_id = obs_hotkey_register_frontend(
+		HOTKEY_RESUME_ID, obs_module_text("Nightbot.Hotkey.Resume"), hotkey_resume_song, nullptr);
+	blog(LOG_INFO, "[Nightbot SR] Hotkey 'Resume' registered with ID: %d", g_nightbot_resume_hotkey_id);
+
+	g_nightbot_pause_hotkey_id = obs_hotkey_register_frontend(
+		HOTKEY_PAUSE_ID, obs_module_text("Nightbot.Hotkey.Pause"), hotkey_pause_song, nullptr);
+	blog(LOG_INFO, "[Nightbot SR] Hotkey 'Pause' registered with ID: %d", g_nightbot_pause_hotkey_id);
+
+	g_nightbot_skip_hotkey_id = obs_hotkey_register_frontend(
+		HOTKEY_SKIP_ID, obs_module_text("Nightbot.Hotkey.Skip"), hotkey_skip_song, nullptr);
+	blog(LOG_INFO, "[Nightbot SR] Hotkey 'Skip' registered with ID: %d", g_nightbot_skip_hotkey_id);
+
+	obs_frontend_add_save_callback(save_hotkeys, nullptr);
+
+	// Load hotkeys from OBS settings
+	obs_data_array_t *nightbot_resume_hotkey = SettingsManager::get().GetHotkeyData(HOTKEY_RESUME_ID);
+	obs_hotkey_load(g_nightbot_resume_hotkey_id, nightbot_resume_hotkey);
+	obs_data_array_release(nightbot_resume_hotkey);
+
+	obs_data_array_t *nightbot_pause_hotkey = SettingsManager::get().GetHotkeyData(HOTKEY_PAUSE_ID);
+	obs_hotkey_load(g_nightbot_pause_hotkey_id, nightbot_pause_hotkey);
+	obs_data_array_release(nightbot_pause_hotkey);
+
+	obs_data_array_t *nightbot_skip_hotkey = SettingsManager::get().GetHotkeyData(HOTKEY_SKIP_ID);
+	obs_hotkey_load(g_nightbot_skip_hotkey_id, nightbot_skip_hotkey);
+	obs_data_array_release(nightbot_skip_hotkey);
+
+	obs_log(LOG_INFO, "[Nightbot SR] Plugin loaded successfully (version %s)", PLUGIN_VERSION);
 	return true;
 }
 
 void obs_module_unload(void)
 {
+	obs_hotkey_unregister(g_nightbot_resume_hotkey_id);
+	obs_hotkey_unregister(g_nightbot_pause_hotkey_id);
+	obs_hotkey_unregister(g_nightbot_skip_hotkey_id);
+
     SettingsManager::get().Save();
 
-	// Limpa os recursos do libcurl
 	curl_global_cleanup();
 
-	obs_log(LOG_INFO, "plugin unloaded");
+	obs_log(LOG_INFO, "[Nightbot SR] Plugin unloaded");
 }

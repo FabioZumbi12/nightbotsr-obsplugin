@@ -35,6 +35,9 @@ public:
 	void SetAutoRefreshInterval(int interval);
 	int GetAutoRefreshInterval();
 
+	void SetHotkeyData(const char *key, obs_data_array_t *hotkeyArray);
+	obs_data_array_t *GetHotkeyData(const char *key) const;
+
 	// Impede a cópia para garantir o padrão Singleton
 	SettingsManager(SettingsManager const &) = delete;
 	void operator=(SettingsManager const &) = delete;

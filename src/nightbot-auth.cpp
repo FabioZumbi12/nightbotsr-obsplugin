@@ -16,8 +16,7 @@
 #include <QJsonObject>
 #include <QJsonParseError>
 
-static const char *BACKEND_BASE_URL =
-	"https://6000-firebase-studio-1765863731028.cluster-r7kbxfo3fnev2vskbkhhphetq6.cloudworkstations.dev";
+static const char *BACKEND_BASE_URL = "https://nightbot-plugin.areaz12server.net.br";
 
 static void LoadState(std::string &access, std::string &refresh)
 {
