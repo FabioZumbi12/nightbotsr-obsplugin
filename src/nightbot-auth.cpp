@@ -1,6 +1,5 @@
 #include "nightbot-auth.h"
-
-#include <obs-module.h>
+#include <obs.h>
 #include <curl/curl.h>
 
 #include <QUrl>

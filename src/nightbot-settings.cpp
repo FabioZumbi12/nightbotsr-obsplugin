@@ -1,5 +1,4 @@
 #include <obs-frontend-api.h>
-#include <obs-module.h>
 #include <obs.h>
 
 #include <QVBoxLayout>
@@ -18,6 +17,7 @@
 #include "nightbot-auth.h"
 #include "SettingsManager.h"
 #include "nightbot-dock.h"
+#include "plugin-support.h"
 
 extern NightbotDock *g_dock_widget;
 
@@ -26,26 +26,26 @@ extern NightbotDock *g_dock_widget;
 NightbotSettingsDialog::NightbotSettingsDialog(QWidget *parent)
 	: QDialog(parent)
 {
-	setWindowTitle(obs_module_text("Nightbot.Settings"));
+	setWindowTitle(get_obs_text("Nightbot.Settings"));
 
 	QVBoxLayout *mainLayout = new QVBoxLayout();
 	setLayout(mainLayout);
 
 	// --- Seção de Autenticação ---
-	QGroupBox *authGroup = new QGroupBox(obs_module_text("Nightbot.Settings.Authentication"));
+	QGroupBox *authGroup = new QGroupBox(get_obs_text("Nightbot.Settings.Authentication"));
 	QVBoxLayout *authLayout = new QVBoxLayout();
 	authGroup->setLayout(authLayout);
 
 	QLabel *instructions = new QLabel(
-		obs_module_text("Nightbot.Settings.Instructions"));
+		get_obs_text("Nightbot.Settings.Instructions"));
 	instructions->setWordWrap(true);
 
 	statusLabel = new QLabel();
 
 	connectButton =
-		new QPushButton(obs_module_text("Nightbot.Settings.Connect"));
+		new QPushButton(get_obs_text("Nightbot.Settings.Connect"));
 	disconnectButton = new QPushButton(
-		obs_module_text("Nightbot.Settings.Disconnect"));
+		get_obs_text("Nightbot.Settings.Disconnect"));
 
 	QHBoxLayout *buttonLayout = new QHBoxLayout();
 	buttonLayout->addWidget(connectButton);
@@ -57,10 +57,10 @@ NightbotSettingsDialog::NightbotSettingsDialog(QWidget *parent)
 	authLayout->addLayout(buttonLayout);
 
 	// --- Seção da Fila de Músicas ---
-	QGroupBox *queueGroup = new QGroupBox(obs_module_text("Nightbot.Settings.Queue"));
+	QGroupBox *queueGroup = new QGroupBox(get_obs_text("Nightbot.Settings.Queue"));
 	QVBoxLayout *queueLayout = new QVBoxLayout();
 	queueGroup->setLayout(queueLayout);
-	autoRefreshCheckBox = new QCheckBox(obs_module_text("Nightbot.Settings.AutoRefresh.Enable"));
+	autoRefreshCheckBox = new QCheckBox(get_obs_text("Nightbot.Settings.AutoRefresh.Enable"));
 	refreshIntervalSpinBox = new QSpinBox();
 	refreshIntervalSpinBox->setMinimum(5);
 	refreshIntervalSpinBox->setMaximum(300);
@@ -74,24 +74,24 @@ NightbotSettingsDialog::NightbotSettingsDialog(QWidget *parent)
 	queueLayout->addLayout(refreshLayout);
 
 	// --- Seção "Tocando Agora" ---
-	QGroupBox *nowPlayingGroup = new QGroupBox(obs_module_text("Nightbot.Settings.NowPlaying"));
+	QGroupBox *nowPlayingGroup = new QGroupBox(get_obs_text("Nightbot.Settings.NowPlaying"));
 	QVBoxLayout *nowPlayingLayout = new QVBoxLayout();
 	nowPlayingGroup->setLayout(nowPlayingLayout);
 
 	QLabel *nowPlayingSourceLabel = new QLabel(
-		obs_module_text("Nightbot.Settings.NowPlayingSource.Label"));
+		get_obs_text("Nightbot.Settings.NowPlayingSource.Label"));
 
 	nowPlayingSourceComboBox = new QComboBox();
 
 	QHBoxLayout *formatLabelLayout = new QHBoxLayout();
 	formatLabelLayout->setContentsMargins(0, 0, 0, 0);
-	QLabel *nowPlayingFormatLabel = new QLabel(obs_module_text("Nightbot.Settings.NowPlayingFormat"));
+	QLabel *nowPlayingFormatLabel = new QLabel(get_obs_text("Nightbot.Settings.NowPlayingFormat"));
 	formatLabelLayout->addWidget(nowPlayingFormatLabel);
 
 	QLabel *helpIconLabel = new QLabel();
 	QIcon helpIcon = style()->standardIcon(QStyle::SP_MessageBoxInformation);
 	helpIconLabel->setPixmap(helpIcon.pixmap(16, 16));
-	helpIconLabel->setToolTip(obs_module_text("Nightbot.Settings.NowPlayingFormat.Tooltip"));
+	helpIconLabel->setToolTip(get_obs_text("Nightbot.Settings.NowPlayingFormat.Tooltip"));
 	formatLabelLayout->addWidget(helpIconLabel);
 	formatLabelLayout->addStretch();
 
@@ -147,8 +147,8 @@ void NightbotSettingsDialog::onAuthTimerUpdate(int remainingSeconds)
 {
 	statusLabel->setText(
 		QString("<b>%1</b> <span style='color: #ffcc00;'>%2 (%3s)</span>")
-			.arg(obs_module_text("Nightbot.Settings.Status"))
-			.arg(obs_module_text(
+			.arg(get_obs_text("Nightbot.Settings.Status"))
+			.arg(get_obs_text(
 				"Nightbot.Settings.Status.Authenticating"))
 			.arg(remainingSeconds));
 }
@@ -159,7 +159,7 @@ void NightbotSettingsDialog::onUserInfoFetched(const QString &userName)
 		SettingsManager::get().SetUserName(userName.toStdString());
 
 		if (g_dock_widget) {
-			NightbotAPI::get().FetchSongQueue();
+			NightbotAPI::get().FetchSongQueue(get_obs_text("Nightbot.Queue.PlaylistUser"));
 		}
 
 		UpdateUI();
@@ -234,20 +234,20 @@ void NightbotSettingsDialog::UpdateUI(bool just_authenticated)
 		}
 
 		if (!user_name.empty()) {
-			QString connected_as_format = obs_module_text(
+			QString connected_as_format = get_obs_text(
 				"Nightbot.Settings.Status.ConnectedAs");
 			QString connected_as_text =
 				connected_as_format.arg(user_name.c_str());
 			statusLabel->setText(QString("<b>%1</b> %2")
-						 .arg(obs_module_text("Nightbot.Settings.Status"))
+						 .arg(get_obs_text("Nightbot.Settings.Status"))
 						 .arg(connected_as_text));
 		}
 
 	} else {
 		statusLabel->setText(QString("<b>%1</b> %2")
-					 .arg(obs_module_text(
+					 .arg(get_obs_text(
 						 "Nightbot.Settings.Status"))
-					 .arg(obs_module_text(
+					 .arg(get_obs_text(
 						 "Nightbot.Settings.Status.Disconnected")));
 	}
 

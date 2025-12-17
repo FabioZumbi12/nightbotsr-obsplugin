@@ -42,7 +42,7 @@ OBS_DECLARE_MODULE()
 OBS_MODULE_USE_DEFAULT_LOCALE(PLUGIN_NAME, "en-US")
 MODULE_EXPORT const char *obs_module_description(void)
 {
-	return "Nightbot Song Request integration for OBS Studio";
+	return get_obs_text("PluginDescription");
 }
 
 static void save_hotkeys(obs_data_t *save_data, bool saving, void *private_data)
@@ -110,7 +110,7 @@ static void show_settings_dialog(void *private_data)
 
 const char *obs_module_get_name(void)
 {
-	return obs_module_text("Nightbot.PluginName");
+	return get_obs_text("Nightbot.PluginName");
 }
 
 bool obs_module_load(void)
@@ -120,13 +120,14 @@ bool obs_module_load(void)
 	SettingsManager::get().Load();
 
 	g_dock_widget = new NightbotDock();
-    obs_frontend_add_dock_by_id("nightbot_sr", obs_module_text("Nightbot.DockTitle"), g_dock_widget);
+    obs_frontend_add_dock_by_id("nightbot_sr", get_obs_text("Nightbot.DockTitle"), g_dock_widget);
 
 	obs_frontend_add_tools_menu_item(
-		obs_module_text("Nightbot.Settings"), show_settings_dialog, nullptr);
+		get_obs_text("Nightbot.Settings"), show_settings_dialog, nullptr);
 
 	if (NightbotAuth::get().IsAuthenticated()) {
-		NightbotAPI::get().FetchSongQueue();
+		NightbotAPI::get().FetchSongQueue(get_obs_text(
+			"Nightbot.Queue.PlaylistUser"));
 	}
 
 	g_nightbot_resume_hotkey_id = obs_hotkey_register_frontend(
@@ -170,4 +171,9 @@ void obs_module_unload(void)
 	curl_global_cleanup();
 
 	obs_log(LOG_INFO, "[Nightbot SR] Plugin unloaded");
+}
+
+const char *get_obs_text(const char *key)
+{
+	return obs_module_text(key);
 }

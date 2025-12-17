@@ -22,7 +22,7 @@ public:
 	static NightbotAPI &get();
 
 	void FetchUserInfo();
-	void FetchSongQueue();
+	void FetchSongQueue(const QString &playlistUserText);
 
 	void ControlPlay();
 	void ControlPause();

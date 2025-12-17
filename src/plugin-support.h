@@ -32,6 +32,7 @@ extern const char *PLUGIN_VERSION;
 
 void obs_log(int log_level, const char *format, ...);
 extern void blogva(int log_level, const char *format, va_list args);
+const char *get_obs_text(const char *key);
 
 #ifdef __cplusplus
 }

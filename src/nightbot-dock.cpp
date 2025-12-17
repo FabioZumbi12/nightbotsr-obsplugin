@@ -1,5 +1,4 @@
 #include <obs-frontend-api.h>
-#include <obs-module.h>
 #include <util/platform.h>
 #include <QDockWidget>
 #include <QMainWindow>
@@ -17,6 +16,7 @@
 #include "nightbot-api.h"
 #include "SettingsManager.h"
 #include "nightbot-auth.h"
+#include "plugin-support.h"
 
 NightbotDock::NightbotDock() : QWidget(nullptr)
 {
@@ -34,9 +34,9 @@ NightbotDock::NightbotDock() : QWidget(nullptr)
 		return button;
 	};
 
-	QPushButton *playButton = createControlButton(style()->standardIcon(QStyle::SP_MediaPlay), obs_module_text("Nightbot.Controls.Play"));
-	QPushButton *pauseButton = createControlButton(style()->standardIcon(QStyle::SP_MediaPause), obs_module_text("Nightbot.Controls.Pause"));
-	QPushButton *skipButton = createControlButton(style()->standardIcon(QStyle::SP_MediaSkipForward), obs_module_text("Nightbot.Controls.Skip"));
+	QPushButton *playButton = createControlButton(style()->standardIcon(QStyle::SP_MediaPlay), get_obs_text("Nightbot.Controls.Play"));
+	QPushButton *pauseButton = createControlButton(style()->standardIcon(QStyle::SP_MediaPause), get_obs_text("Nightbot.Controls.Pause"));
+	QPushButton *skipButton = createControlButton(style()->standardIcon(QStyle::SP_MediaSkipForward), get_obs_text("Nightbot.Controls.Skip"));
 
 	controlsLayout->addWidget(playButton);
 	controlsLayout->addWidget(pauseButton);
@@ -54,7 +54,7 @@ NightbotDock::NightbotDock() : QWidget(nullptr)
 
 
 	QPushButton *refreshButton = createControlButton(
-		style()->standardIcon(QStyle::SP_BrowserReload), obs_module_text("Nightbot.Dock.Refresh"));
+		style()->standardIcon(QStyle::SP_BrowserReload), get_obs_text("Nightbot.Dock.Refresh"));
 	controlsLayout->addWidget(refreshButton);
 
 	mainLayout->addLayout(controlsLayout);
@@ -63,10 +63,10 @@ NightbotDock::NightbotDock() : QWidget(nullptr)
 	songQueueTable->setColumnCount(4);
 
 	QStringList headers;
-	headers << obs_module_text("Nightbot.Queue.Position")
-		<< obs_module_text("Nightbot.Queue.Title")
-		<< obs_module_text("Nightbot.Queue.User")
-		<< obs_module_text("Nightbot.Queue.Actions");
+	headers << get_obs_text("Nightbot.Queue.Position")
+		<< get_obs_text("Nightbot.Queue.Title")
+		<< get_obs_text("Nightbot.Queue.User")
+		<< get_obs_text("Nightbot.Queue.Actions");
 	songQueueTable->setHorizontalHeaderLabels(headers);
 
 	QHeaderView *header = songQueueTable->horizontalHeader();
@@ -197,8 +197,8 @@ void NightbotDock::UpdateSongQueue(const QList<SongItem> &queue)
 			if (item.position > 1) {
 				QPushButton *promoteButton = new QPushButton();
 				promoteButton->setIcon(style()->standardIcon(QStyle::SP_ArrowUp));
-				promoteButton->setFixedSize(24, 24);
-				promoteButton->setToolTip(obs_module_text("Nightbot.Queue.Promote"));
+				promoteButton->setFixedSize(24, 24); 
+				promoteButton->setToolTip(get_obs_text("Nightbot.Queue.Promote"));
 				connect(promoteButton, &QPushButton::clicked, this, [this, id = item.id]() {
 					onPromoteSongClicked(id);
 				});
@@ -208,7 +208,7 @@ void NightbotDock::UpdateSongQueue(const QList<SongItem> &queue)
 			QPushButton *deleteButton = new QPushButton();
 			deleteButton->setIcon(style()->standardIcon(QStyle::SP_DialogCancelButton));
 			deleteButton->setFixedSize(24, 24);
-			deleteButton->setToolTip(obs_module_text("Nightbot.Queue.Delete"));
+			deleteButton->setToolTip(get_obs_text("Nightbot.Queue.Delete"));
 			connect(deleteButton, &QPushButton::clicked, this, [this, id = item.id]() {
 				onDeleteSongClicked(id);
 			});
@@ -230,27 +230,28 @@ void NightbotDock::UpdateSongQueue(const QList<SongItem> &queue)
 
 void NightbotDock::onRefreshClicked()
 {
-	NightbotAPI::get().FetchSongQueue();
+	NightbotAPI::get().FetchSongQueue(get_obs_text("Nightbot.Queue.PlaylistUser"));
 }
 
 void NightbotDock::onPlayClicked()
 {
 	NightbotAPI::get().ControlPlay();	
-	NightbotAPI::get().FetchSongQueue();
+	NightbotAPI::get().FetchSongQueue(get_obs_text("Nightbot.Queue.PlaylistUser"));
 }
 
 void NightbotDock::onPauseClicked()
 {
 	NightbotAPI::get().ControlPause();	
-	NightbotAPI::get().FetchSongQueue();
+	NightbotAPI::get().FetchSongQueue(get_obs_text("Nightbot.Queue.PlaylistUser"));
 }
 
 void NightbotDock::onSkipClicked()
 {
 	NightbotAPI::get().ControlSkip();
 	QTimer::singleShot(500, this, &NightbotDock::onRefreshClicked);
-	
-	NightbotAPI::get().FetchSongQueue();
+
+	NightbotAPI::get().FetchSongQueue(get_obs_text(
+		"Nightbot.Queue.PlaylistUser"));
 }
 
 void NightbotDock::onToggleSRClicked()
@@ -267,10 +268,10 @@ void NightbotDock::updateSRStatusButton(bool isEnabled)
 	srToggleButton->setChecked(isEnabled);
 	if (isEnabled) {
 		srToggleButton->setIcon(style()->standardIcon(QStyle::SP_DialogApplyButton));
-		srToggleButton->setToolTip(obs_module_text("Nightbot.Dock.SR_Enabled"));
+		srToggleButton->setToolTip(get_obs_text("Nightbot.Dock.SR_Enabled"));
 	} else {
 		srToggleButton->setIcon(style()->standardIcon(QStyle::SP_DialogCancelButton));
-		srToggleButton->setToolTip(obs_module_text("Nightbot.Dock.SR_Disabled"));
+		srToggleButton->setToolTip(get_obs_text("Nightbot.Dock.SR_Disabled"));
 	}
 }
 
@@ -279,7 +280,7 @@ void NightbotDock::onDeleteSongClicked(const QString &songId)
 	NightbotAPI::get().DeleteSong(songId);
 	QTimer::singleShot(500, this, &NightbotDock::onRefreshClicked);
 
-	NightbotAPI::get().FetchSongQueue();
+	NightbotAPI::get().FetchSongQueue(get_obs_text("Nightbot.Queue.PlaylistUser"));
 }
 
 void NightbotDock::onPromoteSongClicked(const QString &songId)
@@ -287,5 +288,5 @@ void NightbotDock::onPromoteSongClicked(const QString &songId)
 	NightbotAPI::get().PromoteSong(songId);
 	QTimer::singleShot(500, this, &NightbotDock::onRefreshClicked);
 
-	NightbotAPI::get().FetchSongQueue();
+	NightbotAPI::get().FetchSongQueue(get_obs_text("Nightbot.Queue.PlaylistUser"));
 }
