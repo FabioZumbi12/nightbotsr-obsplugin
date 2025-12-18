@@ -111,7 +111,7 @@ invoke_formatter() {
         if (( ${#source_files} )) {
           while read -r line; do
             local -a line_tokens=(${(z)line})
-            if (( #line_tokens )) {
+            if (( #line_tokens > 1 )) {
               file=${line_tokens[2]//*${project_root}\//}
 
               log_error "${file} requires formatting changes."
