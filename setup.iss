@@ -25,7 +25,7 @@ AppUpdatesURL=https://github.com/FabioZumbi12/NightbotSR-ObsPlugin/releases
 DefaultDirName={autopf}\obs-studio
 ; O nome do executável final do setup.
 OutputDir=build_x64\{#BuildConfig}
-OutputBaseFilename=nightbotsr-obs-plugin-setup
+OutputBaseFilename=nightbotsr-obs-plugin-{#AppVersion}-windows-x64-setup
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern

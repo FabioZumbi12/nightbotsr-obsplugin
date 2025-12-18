@@ -38,8 +38,8 @@
     },
     "name": "nightbotsr-obs-plugin",
     "displayName": "Nightbot SR Plugin for OBS",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "author": "FabioZumbi12",
-    "website": "https://example.com",
+    "website": "https://github.com/FabioZumbi12/NightbotSR-ObsPlugin/",
     "email": "fabio.fmagalhaes12@gmail.com"
 }

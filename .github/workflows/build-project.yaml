@@ -89,6 +89,12 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
+      - name: Update Version in buildspec.json 📝
+        if: inputs.version != ''
+        run: |
+          print "Updating buildspec.json with version ${{ inputs.version }}"
+          jq '.version = "${{ inputs.version }}"' buildspec.json > buildspec.tmp.json && mv buildspec.tmp.json buildspec.json
+
       - name: Set Up Environment 🔧
         id: setup
         run: |
@@ -196,6 +202,12 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
+      - name: Update Version in buildspec.json 📝
+        if: inputs.version != ''
+        run: |
+          echo "Updating buildspec.json with version ${{ inputs.version }}"
+          jq '.version = "${{ inputs.version }}"' buildspec.json > buildspec.tmp.json && mv buildspec.tmp.json buildspec.json
+
       - name: Set Up Environment 🔧
         id: setup
         run: |
@@ -266,6 +278,14 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: 0
+
+      - name: Update Version in buildspec.json 📝
+        if: inputs.version != ''
+        run: |
+          echo "Updating buildspec.json with version ${{ inputs.version }}"
+          $content = Get-Content buildspec.json -Raw | ConvertFrom-Json
+          $content.version = "${{ inputs.version }}"
+          $content | ConvertTo-Json | Set-Content buildspec.json
 
       - name: Set Up Environment 🔧
         id: setup
