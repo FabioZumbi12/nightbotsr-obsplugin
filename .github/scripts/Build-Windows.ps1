@@ -66,7 +66,7 @@ function Build {
 
     $CmakeInstallArgs += @(
         '--install', "build_${Target}"
-        '--prefix', "${ProjectRoot}/release/${Configuration}"
+        '--prefix', "${ProjectRoot}/release/${Configuration}/${ProductName}"
         '--config', $Configuration
     )
 
