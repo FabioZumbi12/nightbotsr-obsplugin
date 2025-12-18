@@ -39,6 +39,7 @@ runs:
         echo ::endgroup::
 
     - name: Make build scripts executable
+      if: fromJSON(steps.checks.outputs.hasChangedFiles)
       shell: bash
       run: |
         chmod +x ./build-aux/run-gersemi
