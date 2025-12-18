@@ -67,11 +67,13 @@ jobs:
           if [[ "${RUNNER_DEBUG}" ]]; then set -x; fi
           shopt -s extglob
           shopt -s nullglob
+          shopt -s globstar
 
           root_dir="$(pwd)"
           commit_hash="${GITHUB_SHA:0:9}"
 
           variants=(
+            'setup;exe'
             'windows-x64;zip|exe'
             'macos-universal;tar.xz|pkg'
             'ubuntu-24.04-x86_64;tar.xz|deb|ddeb'
@@ -81,7 +83,7 @@ jobs:
           for variant_data in "${variants[@]}"; do
             IFS=';' read -r variant suffix <<< "${variant_data}"
 
-            candidates=(*-${variant}-${commit_hash}/@(*|*-dbgsym).@(${suffix}))
+            candidates=(*-${variant}-${commit_hash}/**/@(*|*-dbgsym).@(${suffix}))
 
             for candidate in "${candidates[@]}"; do
               mv "${candidate}" "${root_dir}"
