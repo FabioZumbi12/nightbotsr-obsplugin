@@ -43,6 +43,11 @@ NightbotSettingsDialog::NightbotSettingsDialog(QWidget *parent)
 	instructions->setWordWrap(true);
 
 	statusLabel = new QLabel();
+	authErrorLabel = new QLabel();
+	authErrorLabel->setStyleSheet("color: #ffcc00;"); // Amarelo/Laranja
+	authErrorLabel->setWordWrap(true);
+	authErrorLabel->hide();
+
 
 	connectButton =
 		new QPushButton(get_obs_text("Nightbot.Settings.Connect"));
@@ -56,6 +61,7 @@ NightbotSettingsDialog::NightbotSettingsDialog(QWidget *parent)
 	authLayout->addWidget(instructions);
 	authLayout->addSpacing(10);
 	authLayout->addWidget(statusLabel);
+	authLayout->addWidget(authErrorLabel);
 	authLayout->addLayout(buttonLayout);
 
 	// --- Seção da Fila de Músicas ---
@@ -188,6 +194,9 @@ NightbotSettingsDialog::NightbotSettingsDialog(QWidget *parent)
 	connect(&auth, &NightbotAuth::authTimerUpdate, this,
 		&NightbotSettingsDialog::onAuthTimerUpdate);
 
+	connect(&NightbotAPI::get(), &NightbotAPI::apiErrorOccurred, this,
+		&NightbotSettingsDialog::onApiError);
+
 	UpdateUI();
 
 	connect(&NightbotAPI::get(), &NightbotAPI::userInfoFetched, this,
@@ -272,6 +281,12 @@ void NightbotSettingsDialog::onFilePathChanged()
 	CheckFilePath();
 }
 
+void NightbotSettingsDialog::onApiError(const QString &error)
+{
+	authErrorLabel->setText(get_obs_text("Nightbot.Error.AuthenticationFailed"));
+	authErrorLabel->show();
+}
+
 void NightbotSettingsDialog::CheckFilePath()
 {
 	QString path = filePathLineEdit->text();
@@ -326,6 +341,12 @@ void NightbotSettingsDialog::onNowPlayingFormatChanged(const QString &format)
 
 void NightbotSettingsDialog::UpdateUI(bool just_authenticated)
 {
+	if (just_authenticated) {
+		authErrorLabel->hide();
+	} else if (!auth.IsAuthenticated()) {
+		authErrorLabel->setText(get_obs_text("Nightbot.Error.AuthenticationFailed"));
+		authErrorLabel->show();
+	}
 	bool authenticated = auth.IsAuthenticated();
 
 	if (authenticated) {

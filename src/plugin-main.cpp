@@ -128,6 +128,7 @@ bool obs_module_load(void)
 	if (NightbotAuth::get().IsAuthenticated()) {
 		NightbotAPI::get().FetchSongQueue(get_obs_text(
 			"Nightbot.Queue.PlaylistUser"));
+		NightbotAPI::get().FetchSRSettings();
 	}
 
 	g_nightbot_resume_hotkey_id = obs_hotkey_register_frontend(

@@ -25,6 +25,7 @@ private slots:
 	void onRefreshIntervalChanged(int value);
 	void onNowPlayingSourceChanged(const QString &sourceName);
 	void onNowPlayingFormatChanged(const QString &format);
+	void onApiError(const QString &error);
 	void onSaveToFileToggled(bool checked);
 	void onBrowseFileClicked();
 	void onClearPathClicked();
@@ -36,6 +37,7 @@ private:
 	void CheckFilePath();
 
 	QLabel *statusLabel;
+	QLabel *authErrorLabel;
 	QPushButton *connectButton;
 	QPushButton *disconnectButton;
 	QCheckBox *autoRefreshCheckBox;

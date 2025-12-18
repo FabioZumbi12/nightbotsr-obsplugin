@@ -173,6 +173,13 @@ bool NightbotAuth::RefreshToken()
 		obs_log_warning(
 		     "[Nightbot SR/Auth] Token refresh failed with HTTP status %ld. Response: %s",
 		     http_code, readBuffer.c_str());
+		// Se o refresh token for inválido, limpa a sessão e notifica a UI.
+		if (http_code == 400 || http_code == 401) {
+			obs_log_warning(
+				"[Nightbot SR/Auth] Refresh token is invalid. Clearing session.");
+			ClearTokens();
+			emit authenticationFinished(false);
+		}
 	}
 
 	curl_slist_free_all(headers);

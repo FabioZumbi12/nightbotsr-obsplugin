@@ -33,7 +33,7 @@ struct HttpResponse {
 	std::string error_message;
 };
 
-static HttpResponse PerformRequest(const HttpRequest &request)
+static HttpResponse PerformRequest(const HttpRequest &request, bool is_retry = false)
 {
 	const std::string &access_token = NightbotAuth::get().GetAccessToken();
 	if (access_token.empty()) {
@@ -78,8 +78,27 @@ static HttpResponse PerformRequest(const HttpRequest &request)
 		response.error_message = curl_easy_strerror(res);
 		response.http_code = -1; // Internal error code for cURL failure
 		obs_log_error(
-		     "[Nightbot SR/API] %s request to '%s' failed: %s",
-		     request.method.c_str(), request.url.c_str(), response.error_message.c_str());
+			 "[Nightbot SR/API] %s request to '%s' failed: %s",
+			 request.method.c_str(), request.url.c_str(), response.error_message.c_str());
+		QMetaObject::invokeMethod(&NightbotAPI::get(), "apiErrorOccurred", Qt::QueuedConnection,
+					  Q_ARG(QString, response.error_message.c_str()));
+	}
+
+	if (response.http_code == 401 && !is_retry) {
+		obs_log_info("[Nightbot SR/API] Received 401 Unauthorized. Attempting to refresh token...");
+		if (NightbotAuth::get().RefreshToken()) {
+			obs_log_info(
+				"[Nightbot SR/API] Token refreshed. Retrying original request...");
+			return PerformRequest(request, true); // Tenta novamente, apenas uma vez
+		} else {
+			obs_log_warning("[Nightbot SR/API] Token refresh failed. Aborting request.");
+		}
+	} else if (response.http_code >= 400 && response.http_code != 401) {
+		obs_log_warning(
+			"[Nightbot SR/API] Request to '%s' failed with HTTP status %ld.",
+			request.url.c_str(), response.http_code);
+		QMetaObject::invokeMethod(&NightbotAPI::get(), "apiErrorOccurred", Qt::QueuedConnection,
+					  Q_ARG(QString, "API Error: " + QString::number(response.http_code)));
 	}
 
 	return response;
@@ -197,9 +216,43 @@ void NightbotAPI::FetchSongQueue(const QString &playlistUserText)
 			obs_log_warning(
 			     "[Nightbot SR/API] User song queue fetch failed with HTTP status %ld.",
 			     response.http_code);
+			QMetaObject::invokeMethod(this, "apiErrorOccurred", Qt::QueuedConnection,
+						  Q_ARG(QString, "Failed to fetch song queue: " + QString::number(response.http_code)));
 		}
 
 		emit songQueueFetched(song_queue);
+	});
+}
+
+void NightbotAPI::FetchSRSettings()
+{
+	QThreadPool::globalInstance()->start([this]() {
+		HttpRequest request = { "https://api.nightbot.tv/1/song_requests" };
+		auto response = PerformRequest(request);
+
+		if (response.http_code == 200) {
+			QJsonParseError parseError;
+			QJsonDocument doc = QJsonDocument::fromJson(
+				response.body.c_str(), &parseError);
+
+			if (doc.isNull() || !doc.isObject()) {
+				obs_log_warning("[Nightbot SR/API] Failed to parse SR settings response.");
+				return;
+			}
+
+			QJsonObject rootObj = doc.object();
+			if (rootObj.contains("settings") && rootObj["settings"].isObject()) {
+				QJsonObject settingsObj = rootObj["settings"].toObject();
+				if (settingsObj.contains("volume") && settingsObj["volume"].isDouble()) {
+					int volume = settingsObj["volume"].toInt();
+					emit volumeFetched(volume);
+				}
+			}
+		} else {
+			obs_log_warning(
+				"[Nightbot SR/API] SR settings fetch failed with HTTP status %ld.",
+				response.http_code);
+		}
 	});
 }
 
@@ -247,6 +300,25 @@ void NightbotAPI::ControlSkip()
 		obs_log_info("[Nightbot SR/API] Sending SKIP command...");
 		const std::string url = "https://api.nightbot.tv/1/song_requests/queue/skip";
 		HttpRequest request = { url, "POST" };
+		std::ignore = PerformRequest(request);
+	});
+}
+
+void NightbotAPI::SetVolume(int volume)
+{
+	QThreadPool::globalInstance()->start([this, volume]() {
+		obs_log_info("[Nightbot SR/API] Setting volume to %d...", volume);
+		const std::string url = "https://api.nightbot.tv/1/song_requests";
+
+		QJsonObject body;
+		body["volume"] = volume;
+		QJsonDocument doc(body);
+		std::string put_body =
+			doc.toJson(QJsonDocument::Compact).toStdString();
+
+		HttpRequest request = {url, "PUT", put_body};
+		request.headers.push_back("Content-Type: application/json");
+
 		std::ignore = PerformRequest(request);
 	});
 }

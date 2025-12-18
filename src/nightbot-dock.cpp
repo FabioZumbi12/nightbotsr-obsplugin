@@ -7,6 +7,9 @@
 #include <QStyle>
 #include <QTableWidget>
 #include <QTimer>
+#include <QSlider>
+#include <QLabel>
+#include <QToolTip>
 #include <QHBoxLayout>
 #include <QHeaderView>
 #include <QVBoxLayout>
@@ -19,6 +22,7 @@
 #include "nightbot-auth.h"
 #include "plugin-support.h"
 #include "song-request-dialog.h"
+#include "nightbot-settings.h"
 
 NightbotDock::NightbotDock() : QWidget(nullptr)
 {
@@ -50,6 +54,15 @@ NightbotDock::NightbotDock() : QWidget(nullptr)
 	controlsLayout->addWidget(addButton);
 
 	controlsLayout->addStretch();
+
+	alertButton = new QPushButton();
+	alertButton->setIcon(
+		style()->standardIcon(QStyle::SP_MessageBoxWarning)
+			.pixmap(24, 24));
+	alertButton->setToolTip(get_obs_text("Nightbot.Error.Tooltip"));
+	alertButton->setFlat(true);
+	alertButton->hide();
+	controlsLayout->addWidget(alertButton);
 
 	srToggleButton = new QToolButton();
 	srToggleButton->setFixedSize(32, 32);
@@ -86,6 +99,19 @@ NightbotDock::NightbotDock() : QWidget(nullptr)
 
 	mainLayout->addWidget(songQueueTable);
 
+	QHBoxLayout *volumeLayout = new QHBoxLayout();
+	volumeLayout->setContentsMargins(0, 0, 0, 0);
+	QLabel *volumeLabel = new QLabel(get_obs_text("Nightbot.Controls.Volume"));
+	volumeLayout->addWidget(volumeLabel);
+
+	volumeSlider = new QSlider(Qt::Horizontal);
+	volumeSlider->setRange(0, 100);
+	volumeSlider->setTickPosition(QSlider::TicksBelow);
+	volumeSlider->setTickInterval(10);
+	volumeSlider->setEnabled(NightbotAuth::get().IsAuthenticated());
+	volumeLayout->addWidget(volumeSlider);
+	mainLayout->addLayout(volumeLayout);
+
 	setLayout(mainLayout);
 
 	connect(refreshButton, &QPushButton::clicked, this, &NightbotDock::onRefreshClicked);
@@ -103,9 +129,35 @@ NightbotDock::NightbotDock() : QWidget(nullptr)
 	connect(&NightbotAPI::get(), &NightbotAPI::srStatusFetched, this,
 		&NightbotDock::updateSRStatusButton);
 
+	connect(&NightbotAPI::get(), &NightbotAPI::volumeFetched, this,
+		&NightbotDock::updateVolumeSlider);
+
+	connect(volumeSlider, &QSlider::sliderReleased, this, [this]() {
+		onVolumeChanged(volumeSlider->value());
+	});
+
+	connect(volumeSlider, &QSlider::valueChanged, this,
+		&NightbotDock::onVolumeSliderMoved);
+	connect(volumeSlider, &QSlider::sliderPressed, this, [this]() {
+		onVolumeSliderMoved(volumeSlider->value());
+	});
+
+	connect(&NightbotAuth::get(), &NightbotAuth::authenticationFinished,
+		this, &NightbotDock::onAuthStatusChanged);
+
+	connect(&NightbotAPI::get(), &NightbotAPI::apiErrorOccurred, this,
+		[this](const QString &) { alertButton->show(); });
+
+	connect(alertButton, &QPushButton::clicked, this,
+		&NightbotDock::onAlertClicked);
+
 	refreshTimer = new QTimer(this);
 	connect(refreshTimer, &QTimer::timeout, this, &NightbotDock::onRefreshClicked);
 	UpdateRefreshTimer();
+
+	if (NightbotAuth::get().IsAuthenticated()) {
+		onRefreshClicked();
+	}
 };
 
 void NightbotDock::UpdateRefreshTimer()
@@ -233,9 +285,10 @@ void NightbotDock::UpdateSongQueue(const QList<SongItem> &queue)
 			QPushButton *deleteButton = new QPushButton();
 			deleteButton->setIcon(style()->standardIcon(QStyle::SP_DialogCancelButton));
 			deleteButton->setFixedSize(24, 24);
-			deleteButton->setToolTip(get_obs_text("Nightbot.Queue.Delete"));
+			deleteButton->setToolTip(get_obs_text("Nightbot.Queue.Delete"));			
 			connect(deleteButton, &QPushButton::clicked, this, [this, id = item.id]() {
-				onDeleteSongClicked(id);
+				NightbotAPI::get().DeleteSong(id);
+				QTimer::singleShot(500, this, &NightbotDock::onRefreshClicked);
 			});
 
 			actionsLayout->addWidget(deleteButton);
@@ -256,6 +309,7 @@ void NightbotDock::UpdateSongQueue(const QList<SongItem> &queue)
 void NightbotDock::onRefreshClicked()
 {
 	NightbotAPI::get().FetchSongQueue(get_obs_text("Nightbot.Queue.PlaylistUser"));
+	NightbotAPI::get().FetchSRSettings();
 }
 
 void NightbotDock::onPlayClicked()
@@ -306,12 +360,42 @@ void NightbotDock::updateSRStatusButton(bool isEnabled)
 	}
 }
 
-void NightbotDock::onDeleteSongClicked(const QString &songId)
+void NightbotDock::onVolumeChanged(int volume)
 {
-	NightbotAPI::get().DeleteSong(songId);
-	QTimer::singleShot(500, this, &NightbotDock::onRefreshClicked);
+	NightbotAPI::get().SetVolume(volume);
+}
 
-	NightbotAPI::get().FetchSongQueue(get_obs_text("Nightbot.Queue.PlaylistUser"));
+void NightbotDock::onAuthStatusChanged(bool success)
+{
+	alertButton->setVisible(!success);
+}
+
+void NightbotDock::onAlertClicked()
+{
+	NightbotSettingsDialog dialog(
+		static_cast<QWidget *>(obs_frontend_get_main_window()));
+	dialog.exec();
+}
+
+void NightbotDock::onVolumeSliderMoved(int value)
+{
+	QToolTip::showText(QCursor::pos(), QString::number(value) + "%",
+			   volumeSlider);
+}
+
+void NightbotDock::updateVolumeSlider(int volume)
+{
+	// Só atualiza o slider se o usuário não estiver interagindo com ele
+	// e se o valor recebido da API for diferente do valor atual.
+	if (volumeSlider->isSliderDown() || volumeSlider->value() == volume) {
+		return;
+	}
+
+	volumeSlider->setEnabled(NightbotAuth::get().IsAuthenticated());
+	volumeSlider->blockSignals(true);
+	volumeSlider->setValue(volume);
+	volumeSlider->blockSignals(false);
+	volumeSlider->setToolTip(QString::number(volume) + "%");
 }
 
 void NightbotDock::onPromoteSongClicked(const QString &songId)

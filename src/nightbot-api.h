@@ -23,6 +23,7 @@ public:
 
 	void FetchUserInfo();
 	void FetchSongQueue(const QString &playlistUserText);
+	void FetchSRSettings();
 
 	void ControlPlay();
 	void ControlPause();
@@ -31,12 +32,15 @@ public:
 	void AddSong(const QString &query);
 	void PromoteSong(const QString &songId);
 	void SetSREnabled(bool enabled);
+	void SetVolume(int volume);
 
 signals:
 	void userInfoFetched(const QString &userName);
 	void songQueueFetched(const QList<SongItem> &queue);
 	void songAdded(bool success, const QString &message);
 	void srStatusFetched(bool isEnabled);
+	void volumeFetched(int volume);
+	void apiErrorOccurred(const QString &error);
 
 private:
 	NightbotAPI();
