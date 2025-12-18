@@ -1,6 +1,10 @@
 ﻿; Script do Inno Setup para o plugin Nightbot para OBS Studio
 ; Para compilar com uma configuração diferente, use: /DBuildConfig=Release
-#define BuildConfig "RelWithDebInfo"
+#ifndef BuildConfig
+  #define BuildConfig "RelWithDebInfo"
+#endif
+
+#pragma message "Inno Setup - Compiling with BuildConfig: " + BuildConfig
 
 ; Desenvolvido por FabioZumbi12
 
@@ -45,7 +49,7 @@ brazilianportuguese.LaunchOBS=Iniciar OBS Studio agora
 [Files]
 ; Copia a DLL do plugin para a pasta de plugins do OBS.
 Source: "build_x64\{#BuildConfig}\nightbotsr-obs-plugin.dll"; DestDir: "{app}\obs-plugins\64bit\"; Flags: ignoreversion
-Source: "build_x64\{#BuildConfig}\nightbotsr-obs-plugin.pdb"; DestDir: "{app}\obs-plugins\64bit\"; Flags: ignoreversion
+; Source: "build_x64\{#BuildConfig}\nightbotsr-obs-plugin.pdb"; DestDir: "{app}\obs-plugins\64bit\"; Flags: ignoreversion
 
 ; Copia a pasta 'data' do plugin para a pasta de dados do OBS.
 Source: "data\locale\*.ini"; DestDir: "{app}\data\obs-plugins\nightbotsr-obs-plugin\locale\"; Flags: ignoreversion recursesubdirs createallsubdirs
