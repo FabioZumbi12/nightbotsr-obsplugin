@@ -18,6 +18,9 @@ public:
 	explicit NightbotDock();
 	void UpdateRefreshTimer();
 
+public slots:
+	void SetPlayPauseState(bool isPlaying);
+
 private slots:
 	void UpdateSongQueue(const QList<SongItem> &queue);
 	void onRefreshClicked();
@@ -33,6 +36,7 @@ private slots:
 	void updateVolumeSlider(int volume);
 
 private:
+	QPushButton *playPauseButton;
 	QTableWidget *songQueueTable;
 	QTimer *refreshTimer;
 	QPushButton *alertButton;

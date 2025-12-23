@@ -40,7 +40,7 @@ NightbotDock::NightbotDock() : QWidget(nullptr)
 		return button;
 	};
 
-	QPushButton *playPauseButton = createControlButton(style()->standardIcon(QStyle::SP_MediaPlay), get_obs_text("Nightbot.Controls.Play"));
+	playPauseButton = createControlButton(style()->standardIcon(QStyle::SP_MediaPlay), get_obs_text("Nightbot.Controls.Play"));
 	playPauseButton->setProperty("isPlaying", false);
 	QPushButton *skipButton = createControlButton(style()->standardIcon(QStyle::SP_MediaSkipForward), get_obs_text("Nightbot.Controls.Skip"));
 
@@ -115,18 +115,14 @@ NightbotDock::NightbotDock() : QWidget(nullptr)
 
 	connect(refreshButton, &QPushButton::clicked, this, &NightbotDock::onRefreshClicked);
 
-	connect(playPauseButton, &QPushButton::clicked, this, [this, playPauseButton]() {
+	connect(playPauseButton, &QPushButton::clicked, this, [this]() {
 		bool isPlaying = playPauseButton->property("isPlaying").toBool();
 		if (isPlaying) {
 			NightbotAPI::get().ControlPause();
-			playPauseButton->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
-			playPauseButton->setToolTip(get_obs_text("Nightbot.Controls.Play"));
-			playPauseButton->setProperty("isPlaying", false);
+			SetPlayPauseState(false);
 		} else {
 			NightbotAPI::get().ControlPlay();
-			playPauseButton->setIcon(style()->standardIcon(QStyle::SP_MediaPause));
-			playPauseButton->setToolTip(get_obs_text("Nightbot.Controls.Pause"));
-			playPauseButton->setProperty("isPlaying", true);
+			SetPlayPauseState(true);
 		}
 		NightbotAPI::get().FetchSongQueue(get_obs_text("Nightbot.Queue.PlaylistUser"));
 	});
@@ -406,4 +402,16 @@ void NightbotDock::onPromoteSongClicked(const QString &songId)
 	QTimer::singleShot(500, this, &NightbotDock::onRefreshClicked);
 
 	NightbotAPI::get().FetchSongQueue(get_obs_text("Nightbot.Queue.PlaylistUser"));
+}
+
+void NightbotDock::SetPlayPauseState(bool isPlaying)
+{
+	if (isPlaying) {
+		playPauseButton->setIcon(style()->standardIcon(QStyle::SP_MediaPause));
+		playPauseButton->setToolTip(get_obs_text("Nightbot.Controls.Pause"));
+	} else {
+		playPauseButton->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
+		playPauseButton->setToolTip(get_obs_text("Nightbot.Controls.Play"));
+	}
+	playPauseButton->setProperty("isPlaying", isPlaying);
 }

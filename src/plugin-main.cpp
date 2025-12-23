@@ -41,6 +41,8 @@ static obs_hotkey_id g_nightbot_skip_hotkey_id;
 extern void FreeSettingsManager();
 extern void ShutdownNightbotAPI();
 
+NightbotDock *g_dock_widget = nullptr;
+
 OBS_DECLARE_MODULE()
 OBS_MODULE_USE_DEFAULT_LOCALE(PLUGIN_NAME, "en-US")
 MODULE_EXPORT const char *obs_module_description(void)
@@ -77,6 +79,8 @@ static void hotkey_pause_song(void *data, obs_hotkey_id id, obs_hotkey_t *hotkey
 	if (pressed) {
 		obs_log_info("Pause hotkey pressed");
 		NightbotAPI::get().ControlPause();
+		if (g_dock_widget)
+			QMetaObject::invokeMethod(g_dock_widget, [] { g_dock_widget->SetPlayPauseState(false); }, Qt::QueuedConnection);
 	}
 }
 
@@ -88,6 +92,8 @@ static void hotkey_resume_song(void *data, obs_hotkey_id id, obs_hotkey_t *hotke
 	if (pressed) {
 		obs_log_info("Resume hotkey pressed");
 		NightbotAPI::get().ControlPlay();
+		if (g_dock_widget)
+			QMetaObject::invokeMethod(g_dock_widget, [] { g_dock_widget->SetPlayPauseState(true); }, Qt::QueuedConnection);
 	}
 }
 
@@ -101,8 +107,6 @@ static void hotkey_skip_song(void *data, obs_hotkey_id id, obs_hotkey_t *hotkey,
 		NightbotAPI::get().ControlSkip();
 	}
 }
-
-NightbotDock *g_dock_widget = nullptr;
 
 static void show_settings_dialog(void *private_data)
 {
