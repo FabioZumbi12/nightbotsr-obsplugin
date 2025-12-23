@@ -1,3 +1,5 @@
+![Screenshot_28](https://github.com/user-attachments/assets/060d72cf-1fc0-472d-a996-9d01be378008)
+
 [Read this in Portuguese (Português)](README.pt-BR.md)
 
 # Nightbot Plugin for OBS Studio
