@@ -1,4 +1,6 @@
-[Read this in English (Inglês)](README.md)
+ ![Screenshot_27](https://github.com/user-attachments/assets/f3f79af3-42a4-4663-b1d0-612e7d15b11d)
+ 
+ [Read this in English (Inglês)](README.md)
 
 # Plugin Nightbot para OBS Studio
 
