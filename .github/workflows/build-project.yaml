@@ -308,7 +308,6 @@ jobs:
         uses: ./.github/actions/build-plugin
         with:
           target: x64
-          version: ${{ inputs.version }}
           config: ${{ needs.check-event.outputs.config }}
 
       - name: Package Plugin 📀
