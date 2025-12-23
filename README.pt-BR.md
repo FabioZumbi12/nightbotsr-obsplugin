@@ -1,4 +1,4 @@
- ![Screenshot_27](https://github.com/user-attachments/assets/f3f79af3-42a4-4663-b1d0-612e7d15b11d)
+![Screenshot_28](https://github.com/user-attachments/assets/060d72cf-1fc0-472d-a996-9d01be378008)
  
  [Read this in English (Inglês)](README.md)
 
