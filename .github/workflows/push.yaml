@@ -22,7 +22,6 @@ jobs:
     name: Build Project 🧱
     uses: ./.github/workflows/build-project.yaml
     with:
-      # Pass the tag name to the build job only if it's a release tag
       version: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
     secrets: inherit
     permissions:
