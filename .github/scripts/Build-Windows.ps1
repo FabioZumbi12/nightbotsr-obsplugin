@@ -45,6 +45,12 @@ function Build {
         . $Utility.FullName
     }
 
+    $BuildSpec = Get-Content -Path "${ProjectRoot}/buildspec.json" -Raw | ConvertFrom-Json
+    $ProductName = $BuildSpec.name
+    if (-not $Version) {
+        $Version = $BuildSpec.version
+    }
+
     Push-Location -Stack BuildTemp
     Ensure-Location $ProjectRoot
 
