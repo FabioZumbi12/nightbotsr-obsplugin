@@ -60,7 +60,7 @@ function Package {
 
     Log-Group "Archiving ${ProductName}..."
     $CompressArgs = @{
-        Path = (Get-ChildItem -Path "${ProjectRoot}/release/${Configuration}" -Exclude "${ProductName}*.*")
+        Path = (Get-ChildItem -Path "${ProjectRoot}/release/${Configuration}" | Where-Object { $_.Name -ne $ProductName })
         CompressionLevel = 'Optimal'
         DestinationPath = "${ProjectRoot}/release/${OutputName}.zip"
         Verbose = ($Env:CI -ne $null)
