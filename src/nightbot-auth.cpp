@@ -1,5 +1,7 @@
 #include "nightbot-auth.h"
 #include <curl/curl.h>
+#include <atomic>
+#include <chrono>
 
 #include <QUrl>
 #include <QUrlQuery>
@@ -15,12 +17,22 @@
 #include <QJsonObject>
 #include <QJsonParseError>
 
-static const char *BACKEND_BASE_URL = "https://nightbot-plugin.areaz12server.net.br";
+static const char *BACKEND_BASE_URL = "https://nightbot-obs.areaz12server.net.br";
+
+static std::atomic<bool> g_is_refreshing(false);
+static std::chrono::steady_clock::time_point g_last_success_time;
 
 static void LoadState(std::string &access, std::string &refresh)
 {
 	access = SettingsManager::get().GetAccessToken();
 	refresh = SettingsManager::get().GetRefreshToken();
+}
+
+static size_t auth_write_callback(void *contents, size_t size, size_t nmemb, void *userp)
+{
+	size_t realsize = size * nmemb;
+	((std::string *)userp)->append((char *)contents, realsize);
+	return realsize;
 }
 
 NightbotAuth::NightbotAuth(QObject *parent) : QObject(parent)
@@ -84,12 +96,20 @@ void NightbotAuth::Authenticate()
 	QDesktopServices::openUrl(url);
 }
 
-bool NightbotAuth::RefreshToken()
+NightbotAuth::RefreshStatus NightbotAuth::RefreshToken()
 {
+	if (g_is_refreshing)
+		return RefreshStatus::WAITING;
+
+	auto now = std::chrono::steady_clock::now();
+	if (std::chrono::duration_cast<std::chrono::seconds>(now - g_last_success_time).count() < 10) {
+		return RefreshStatus::DONE;
+	}
+
 	if (refresh_token.empty()) {
 		obs_log_warning(
 		     "[Nightbot SR/Auth] No refresh token available to renew.");
-		return false;
+		return RefreshStatus::FAILED;
 	}
 
 	obs_log_info("[Nightbot SR/Auth] Refreshing token...");
@@ -98,17 +118,13 @@ bool NightbotAuth::RefreshToken()
 	if (!curl) {
 		obs_log_error(
 		     "[Nightbot SR/Auth] Failed to initialize libcurl for token refresh.");
-		return false;
+		return RefreshStatus::FAILED;
 	}
 
-	std::string readBuffer;
-	auto write_callback = [](void *contents, size_t size, size_t nmemb,
-				 void *userp) -> size_t {
-		((std::string *)userp)->append((char *)contents, size * nmemb);
-		return size * nmemb;
-	};
+	g_is_refreshing = true;
 
-	std::string refresh_url_str = std::string(BACKEND_BASE_URL) + "/api/refresh-token";
+	std::string readBuffer;
+	std::string refresh_url_str = std::string(BACKEND_BASE_URL) + "/refresh-token";
 	const char *refresh_url = refresh_url_str.c_str();
 
 	QJsonObject request_body;
@@ -118,8 +134,9 @@ bool NightbotAuth::RefreshToken()
 		doc.toJson(QJsonDocument::Compact).toStdString();
 
 	curl_easy_setopt(curl, CURLOPT_URL, refresh_url);
+	curl_easy_setopt(curl, CURLOPT_POST, 1L);
 	curl_easy_setopt(curl, CURLOPT_POSTFIELDS, postFields.c_str());
-	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
+	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, auth_write_callback);
 	curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
 	struct curl_slist *headers = NULL;
 	headers = curl_slist_append(headers, "Content-Type: application/json");
@@ -163,6 +180,7 @@ bool NightbotAuth::RefreshToken()
 
 				obs_log_info(
 				     "[Nightbot SR/Auth] Token refreshed successfully.");
+				g_last_success_time = std::chrono::steady_clock::now();
 				success = true;
 			} else {
 				obs_log_warning(
@@ -184,7 +202,8 @@ bool NightbotAuth::RefreshToken()
 
 	curl_slist_free_all(headers);
 	curl_easy_cleanup(curl);
-	return success;
+	g_is_refreshing = false;
+	return success ? RefreshStatus::DONE : RefreshStatus::FAILED;
 }
 
 void NightbotAuth::ClearTokens()

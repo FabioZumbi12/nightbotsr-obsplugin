@@ -283,6 +283,7 @@ void NightbotSettingsDialog::onFilePathChanged()
 
 void NightbotSettingsDialog::onApiError(const QString &error)
 {
+	Q_UNUSED(error);
 	authErrorLabel->setText(get_obs_text("Nightbot.Error.AuthenticationFailed"));
 	authErrorLabel->show();
 }

@@ -38,6 +38,9 @@ static obs_hotkey_id g_nightbot_skip_hotkey_id;
 #define HOTKEY_RESUME_ID "nightbot_sr.resume"
 #define HOTKEY_SKIP_ID "nightbot_sr.skip"
 
+extern void FreeSettingsManager();
+extern void ShutdownNightbotAPI();
+
 OBS_DECLARE_MODULE()
 OBS_MODULE_USE_DEFAULT_LOCALE(PLUGIN_NAME, "en-US")
 MODULE_EXPORT const char *obs_module_description(void)
@@ -167,7 +170,10 @@ void obs_module_unload(void)
 	obs_hotkey_unregister(g_nightbot_pause_hotkey_id);
 	obs_hotkey_unregister(g_nightbot_skip_hotkey_id);
 
-    SettingsManager::get().Save();
+	ShutdownNightbotAPI();
+	FreeSettingsManager();
+
+	g_dock_widget = nullptr;
 
 	curl_global_cleanup();
 

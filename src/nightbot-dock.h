@@ -21,8 +21,6 @@ public:
 private slots:
 	void UpdateSongQueue(const QList<SongItem> &queue);
 	void onRefreshClicked();
-	void onPlayClicked();
-	void onPauseClicked();
 	void onSkipClicked();
 	void onPromoteSongClicked(const QString &songId);
 	void onAddSongClicked();

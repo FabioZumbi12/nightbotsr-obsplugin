@@ -4,10 +4,21 @@
 
 static const char *SETTINGS_FILE_NAME = "settings.json";
 
+static SettingsManager *s_instance = nullptr;
+
 SettingsManager &SettingsManager::get()
 {
-	static SettingsManager instance;
-	return instance;
+	if (!s_instance)
+		s_instance = new SettingsManager();
+	return *s_instance;
+}
+
+void FreeSettingsManager()
+{
+	if (s_instance) {
+		delete s_instance;
+		s_instance = nullptr;
+	}
 }
 
 SettingsManager::~SettingsManager()
@@ -15,6 +26,7 @@ SettingsManager::~SettingsManager()
 	if (settings) {
 		Save();
 		obs_data_release(settings);
+		settings = nullptr;
 	}
 }
 
@@ -68,7 +80,6 @@ void SettingsManager::Save()
 void SettingsManager::SetAccessToken(const std::string &token)
 {
 	obs_data_set_string(settings, Setting::AccessToken, token.c_str());
-	Save();
 }
 
 std::string SettingsManager::GetAccessToken()
@@ -83,7 +94,6 @@ std::string SettingsManager::GetAccessToken()
 void SettingsManager::SetRefreshToken(const std::string &token)
 {
 	obs_data_set_string(settings, Setting::RefreshToken, token.c_str());
-	Save();
 }
 
 std::string SettingsManager::GetRefreshToken()

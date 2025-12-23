@@ -17,8 +17,14 @@ public:
         return instance;
     }
 
+	enum class RefreshStatus {
+		WAITING,
+		DONE,
+		FAILED
+	};
+
 	void Authenticate();
-	bool RefreshToken();
+	RefreshStatus RefreshToken();
 	void ClearTokens();
 	bool IsAuthenticated();
 

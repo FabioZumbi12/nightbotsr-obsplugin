@@ -40,12 +40,11 @@ NightbotDock::NightbotDock() : QWidget(nullptr)
 		return button;
 	};
 
-	QPushButton *playButton = createControlButton(style()->standardIcon(QStyle::SP_MediaPlay), get_obs_text("Nightbot.Controls.Play"));
-	QPushButton *pauseButton = createControlButton(style()->standardIcon(QStyle::SP_MediaPause), get_obs_text("Nightbot.Controls.Pause"));
+	QPushButton *playPauseButton = createControlButton(style()->standardIcon(QStyle::SP_MediaPlay), get_obs_text("Nightbot.Controls.Play"));
+	playPauseButton->setProperty("isPlaying", false);
 	QPushButton *skipButton = createControlButton(style()->standardIcon(QStyle::SP_MediaSkipForward), get_obs_text("Nightbot.Controls.Skip"));
 
-	controlsLayout->addWidget(playButton);
-	controlsLayout->addWidget(pauseButton);
+	controlsLayout->addWidget(playPauseButton);
 	controlsLayout->addWidget(skipButton);
 
 	QPushButton *addButton = createControlButton(
@@ -116,8 +115,21 @@ NightbotDock::NightbotDock() : QWidget(nullptr)
 
 	connect(refreshButton, &QPushButton::clicked, this, &NightbotDock::onRefreshClicked);
 
-	connect(playButton, &QPushButton::clicked, this, &NightbotDock::onPlayClicked);
-	connect(pauseButton, &QPushButton::clicked, this, &NightbotDock::onPauseClicked);
+	connect(playPauseButton, &QPushButton::clicked, this, [this, playPauseButton]() {
+		bool isPlaying = playPauseButton->property("isPlaying").toBool();
+		if (isPlaying) {
+			NightbotAPI::get().ControlPause();
+			playPauseButton->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
+			playPauseButton->setToolTip(get_obs_text("Nightbot.Controls.Play"));
+			playPauseButton->setProperty("isPlaying", false);
+		} else {
+			NightbotAPI::get().ControlPlay();
+			playPauseButton->setIcon(style()->standardIcon(QStyle::SP_MediaPause));
+			playPauseButton->setToolTip(get_obs_text("Nightbot.Controls.Pause"));
+			playPauseButton->setProperty("isPlaying", true);
+		}
+		NightbotAPI::get().FetchSongQueue(get_obs_text("Nightbot.Queue.PlaylistUser"));
+	});
 	connect(skipButton, &QPushButton::clicked, this, &NightbotDock::onSkipClicked);
 
 	connect(addButton, &QPushButton::clicked, this, &NightbotDock::onAddSongClicked);
@@ -222,6 +234,7 @@ void NightbotDock::UpdateSongQueue(const QList<SongItem> &queue)
 			obs_source_release(textSource);
 		} else {
 			obs_log_warning("[Nightbot SR/Dock] Now playing source '%s' not found.", sourceName.c_str());
+			SettingsManager::get().SetNowPlayingSource("");
 		}
 	}
 
@@ -238,6 +251,7 @@ void NightbotDock::UpdateSongQueue(const QList<SongItem> &queue)
 				obs_log_warning("[Nightbot SR/Dock] Failed to write to file '%s'. Error: %s",
 						filePathStr.c_str(),
 						file.errorString().toUtf8().constData());
+				SettingsManager::get().SetNowPlayingToFilePath("");
 			}
 		}
 	}
@@ -310,18 +324,6 @@ void NightbotDock::onRefreshClicked()
 {
 	NightbotAPI::get().FetchSongQueue(get_obs_text("Nightbot.Queue.PlaylistUser"));
 	NightbotAPI::get().FetchSRSettings();
-}
-
-void NightbotDock::onPlayClicked()
-{
-	NightbotAPI::get().ControlPlay();	
-	NightbotAPI::get().FetchSongQueue(get_obs_text("Nightbot.Queue.PlaylistUser"));
-}
-
-void NightbotDock::onPauseClicked()
-{
-	NightbotAPI::get().ControlPause();	
-	NightbotAPI::get().FetchSongQueue(get_obs_text("Nightbot.Queue.PlaylistUser"));
 }
 
 void NightbotDock::onSkipClicked()

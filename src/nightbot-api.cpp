@@ -11,6 +11,22 @@
 #include <QString>
 #include <QtConcurrent/QtConcurrent>
 #include <QThreadPool>
+#include <QTimer>
+#include <QThread>
+
+static QThreadPool *g_apiThreadPool = nullptr;
+
+void ShutdownNightbotAPI()
+{
+	if (g_apiThreadPool) {
+		obs_log_info("[Nightbot SR/API] Waiting for threads to finish...");
+		g_apiThreadPool->clear();
+		g_apiThreadPool->waitForDone();
+		delete g_apiThreadPool;
+		g_apiThreadPool = nullptr;
+		obs_log_info("[Nightbot SR/API] Threads finished.");
+	}
+}
 
 static size_t auth_curl_write_callback(void *contents, size_t size, size_t nmemb, void *userp)
 {
@@ -32,6 +48,58 @@ struct HttpResponse {
 	bool curl_error = false;
 	std::string error_message;
 };
+
+static bool HandleRequestError(const HttpRequest &request, HttpResponse &response, bool is_retry)
+{
+	if (response.curl_error) {
+		obs_log_error(
+			 "[Nightbot SR/API] %s request to '%s' failed: %s",
+			 request.method.c_str(), request.url.c_str(), response.error_message.c_str());
+		QMetaObject::invokeMethod(&NightbotAPI::get(), "apiErrorOccurred", Qt::QueuedConnection,
+					  Q_ARG(QString, response.error_message.c_str()));
+		return false;
+	}
+
+	if (response.http_code == 401) {
+		if (is_retry)
+			return false;
+
+		obs_log_info("[Nightbot SR/API] Received 401 Unauthorized. Attempting to refresh token...");
+		NightbotAuth::RefreshStatus status = NightbotAuth::get().RefreshToken();
+
+		if (status == NightbotAuth::RefreshStatus::WAITING) {
+			int retries = 0;
+			while (status == NightbotAuth::RefreshStatus::WAITING && retries < 10) {
+				QThread::msleep(500);
+				status = NightbotAuth::get().RefreshToken();
+				retries++;
+			}
+		}
+
+		if (status == NightbotAuth::RefreshStatus::DONE) {
+			obs_log_info(
+				"[Nightbot SR/API] Token refreshed. Retrying original request...");
+			return true;
+		} else {
+			obs_log_warning("[Nightbot SR/API] Token refresh failed. Triggering re-authentication.");
+			QTimer::singleShot(0, &NightbotAuth::get(), []() {
+				NightbotAuth::get().Authenticate();
+			});
+			return false;
+		}
+	}
+
+	if (response.http_code >= 400) {
+		obs_log_warning(
+			"[Nightbot SR/API] Request to '%s' failed with HTTP status %ld.",
+			request.url.c_str(), response.http_code);
+		QMetaObject::invokeMethod(&NightbotAPI::get(), "apiErrorOccurred", Qt::QueuedConnection,
+					  Q_ARG(QString, "API Error: " + QString::number(response.http_code)));
+		return false;
+	}
+
+	return false;
+}
 
 static HttpResponse PerformRequest(const HttpRequest &request, bool is_retry = false)
 {
@@ -62,6 +130,7 @@ static HttpResponse PerformRequest(const HttpRequest &request, bool is_retry = f
 	curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response.body);
 	curl_easy_setopt(curl, CURLOPT_FAILONERROR, 0L);
 	curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, request.method.c_str());
+	curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10L);
 
 	if (request.method == "POST" || request.method == "PUT") {
 		curl_easy_setopt(curl, CURLOPT_POSTFIELDS, request.body.c_str());
@@ -77,28 +146,12 @@ static HttpResponse PerformRequest(const HttpRequest &request, bool is_retry = f
 		response.curl_error = true;
 		response.error_message = curl_easy_strerror(res);
 		response.http_code = -1; // Internal error code for cURL failure
-		obs_log_error(
-			 "[Nightbot SR/API] %s request to '%s' failed: %s",
-			 request.method.c_str(), request.url.c_str(), response.error_message.c_str());
-		QMetaObject::invokeMethod(&NightbotAPI::get(), "apiErrorOccurred", Qt::QueuedConnection,
-					  Q_ARG(QString, response.error_message.c_str()));
 	}
 
-	if (response.http_code == 401 && !is_retry) {
-		obs_log_info("[Nightbot SR/API] Received 401 Unauthorized. Attempting to refresh token...");
-		if (NightbotAuth::get().RefreshToken()) {
-			obs_log_info(
-				"[Nightbot SR/API] Token refreshed. Retrying original request...");
-			return PerformRequest(request, true); // Tenta novamente, apenas uma vez
-		} else {
-			obs_log_warning("[Nightbot SR/API] Token refresh failed. Aborting request.");
+	if (response.curl_error || response.http_code >= 400) {
+		if (HandleRequestError(request, response, is_retry)) {
+			return PerformRequest(request, true);
 		}
-	} else if (response.http_code >= 400 && response.http_code != 401) {
-		obs_log_warning(
-			"[Nightbot SR/API] Request to '%s' failed with HTTP status %ld.",
-			request.url.c_str(), response.http_code);
-		QMetaObject::invokeMethod(&NightbotAPI::get(), "apiErrorOccurred", Qt::QueuedConnection,
-					  Q_ARG(QString, "API Error: " + QString::number(response.http_code)));
 	}
 
 	return response;
@@ -110,19 +163,25 @@ NightbotAPI &NightbotAPI::get()
 	return instance;
 }
 
-NightbotAPI::NightbotAPI() {}
+NightbotAPI::NightbotAPI()
+{
+	if (!g_apiThreadPool) {
+		g_apiThreadPool = new QThreadPool();
+		g_apiThreadPool->setMaxThreadCount(4);
+	}
+}
 
 void NightbotAPI::FetchUserInfo()
 {
-	obs_log_info("[Nightbot SR/API] Fetching user info...");
+	g_apiThreadPool->start([this]() {
+		obs_log_info("[Nightbot SR/API] Fetching user info...");
 
-	HttpRequest request = { "https://api.nightbot.tv/1/me" };
-	auto response = PerformRequest(request);
+		HttpRequest request = { "https://api.nightbot.tv/1/me" };
+		auto response = PerformRequest(request);
 
-	if (response.http_code == 200) {
-		QThreadPool::globalInstance()->start([this, body = response.body]() {
+		if (response.http_code == 200) {
 			QJsonParseError parseError;
-			QByteArray response_data = QString::fromStdString(body).toUtf8();
+			QByteArray response_data = QString::fromStdString(response.body).toUtf8();
 			QJsonDocument doc = QJsonDocument::fromJson(response_data, &parseError);
 
 			if (doc.isNull()) {
@@ -144,18 +203,15 @@ void NightbotAPI::FetchUserInfo()
 			} else {
 				emit userInfoFetched("");
 			}
-		});
-	} else {
-		obs_log_warning(
-		     "[Nightbot SR/API] User info fetch failed with HTTP status %ld.",
-		     response.http_code);
-		emit userInfoFetched("");
-	}
+		} else {
+			emit userInfoFetched("");
+		}
+	});
 }
 
 void NightbotAPI::FetchSongQueue(const QString &playlistUserText)
 {
-	QThreadPool::globalInstance()->start([this, playlistUserText]() {
+	g_apiThreadPool->start([this, playlistUserText]() {
 		QList<SongItem> song_queue;
 
 		HttpRequest request = { "https://api.nightbot.tv/1/song_requests/queue" };
@@ -212,12 +268,6 @@ void NightbotAPI::FetchSongQueue(const QString &playlistUserText)
 				  [](const SongItem &a, const SongItem &b) {
 					  return a.position < b.position;
 				  });
-		} else {
-			obs_log_warning(
-			     "[Nightbot SR/API] User song queue fetch failed with HTTP status %ld.",
-			     response.http_code);
-			QMetaObject::invokeMethod(this, "apiErrorOccurred", Qt::QueuedConnection,
-						  Q_ARG(QString, "Failed to fetch song queue: " + QString::number(response.http_code)));
 		}
 
 		emit songQueueFetched(song_queue);
@@ -226,7 +276,7 @@ void NightbotAPI::FetchSongQueue(const QString &playlistUserText)
 
 void NightbotAPI::FetchSRSettings()
 {
-	QThreadPool::globalInstance()->start([this]() {
+	g_apiThreadPool->start([this]() {
 		HttpRequest request = { "https://api.nightbot.tv/1/song_requests" };
 		auto response = PerformRequest(request);
 
@@ -248,17 +298,13 @@ void NightbotAPI::FetchSRSettings()
 					emit volumeFetched(volume);
 				}
 			}
-		} else {
-			obs_log_warning(
-				"[Nightbot SR/API] SR settings fetch failed with HTTP status %ld.",
-				response.http_code);
 		}
 	});
 }
 
 void NightbotAPI::ControlPlay()
 {
-	QThreadPool::globalInstance()->start([this]() {
+	g_apiThreadPool->start([this]() {
 		obs_log_info("[Nightbot SR/API] Sending PLAY command...");
 		const std::string url =
 			"https://api.nightbot.tv/1/song_requests/queue/play";
@@ -277,7 +323,7 @@ void NightbotAPI::ControlPlay()
 
 void NightbotAPI::ControlPause()
 {
-	QThreadPool::globalInstance()->start([this]() {
+	g_apiThreadPool->start([this]() {
 		obs_log_info("[Nightbot SR/API] Sending PAUSE command...");
 		const std::string url =
 			"https://api.nightbot.tv/1/song_requests/queue/pause";
@@ -296,7 +342,7 @@ void NightbotAPI::ControlPause()
 
 void NightbotAPI::ControlSkip()
 {
-	QThreadPool::globalInstance()->start([this]() {
+	g_apiThreadPool->start([this]() {
 		obs_log_info("[Nightbot SR/API] Sending SKIP command...");
 		const std::string url = "https://api.nightbot.tv/1/song_requests/queue/skip";
 		HttpRequest request = { url, "POST" };
@@ -306,7 +352,7 @@ void NightbotAPI::ControlSkip()
 
 void NightbotAPI::SetVolume(int volume)
 {
-	QThreadPool::globalInstance()->start([this, volume]() {
+	g_apiThreadPool->start([this, volume]() {
 		obs_log_info("[Nightbot SR/API] Setting volume to %d...", volume);
 		const std::string url = "https://api.nightbot.tv/1/song_requests";
 
@@ -328,7 +374,7 @@ void NightbotAPI::DeleteSong(const QString &songId)
 	if (songId.isEmpty())
 		return;
 
-	QThreadPool::globalInstance()->start([songId]() {
+	g_apiThreadPool->start([songId]() {
 		obs_log_info("[Nightbot SR/API] Deleting song with ID: %s", songId.toUtf8().constData());
 		std::string url = "https://api.nightbot.tv/1/song_requests/queue/" + songId.toStdString();
 		HttpRequest request = { url, "DELETE" };
@@ -338,7 +384,7 @@ void NightbotAPI::DeleteSong(const QString &songId)
 
 void NightbotAPI::AddSong(const QString &query)
 {
-	QThreadPool::globalInstance()->start([this, query]() {
+	g_apiThreadPool->start([this, query]() {
 		obs_log_info("[Nightbot SR/API] Adding song with query: %s",
 			     query.toUtf8().constData());
 
@@ -377,7 +423,7 @@ void NightbotAPI::AddSong(const QString &query)
 
 void NightbotAPI::SetSREnabled(bool enabled)
 {
-	QThreadPool::globalInstance()->start([this, enabled]() {
+	g_apiThreadPool->start([this, enabled]() {
 		obs_log_info("[Nightbot SR/API] Setting Song Requests to %s...",
 		     enabled ? "Enabled" : "Disabled");
 		const std::string url = "https://api.nightbot.tv/1/song_requests";
@@ -399,7 +445,7 @@ void NightbotAPI::PromoteSong(const QString &songId)
 	if (songId.isEmpty())
 		return;
 
-	QThreadPool::globalInstance()->start([songId]() {
+	g_apiThreadPool->start([songId]() {
 		obs_log_info("[Nightbot SR/API] Promoting song with ID: %s", songId.toUtf8().constData());
 		std::string url = "https://api.nightbot.tv/1/song_requests/queue/" + songId.toStdString() + "/promote";
 		HttpRequest request = { url, "POST" };
