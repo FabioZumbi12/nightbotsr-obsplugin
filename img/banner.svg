@@ -1,0 +1,62 @@
+<svg width="1200" height="350" viewBox="0 0 1200 350" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Background gradient -->
+    <linearGradient id="bgGradient" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f2544"/>
+      <stop offset="100%" stop-color="#142f55"/>
+    </linearGradient>
+
+    <!-- Glow effect -->
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="350" fill="url(#bgGradient)"/>
+
+  <!-- Top accent bar -->
+  <rect x="0" y="0" width="1200" height="8" fill="#60a5fa"/>
+
+  <!-- Title -->
+  <text
+    x="600"
+    y="150"
+    text-anchor="middle"
+    fill="#ffffff"
+    font-size="70"
+    font-weight="700"
+    font-family="Arial, Helvetica, sans-serif"
+    filter="url(#glow)">
+    Nightbot SR Dock
+  </text>
+
+  <!-- Subtitle -->
+  <text
+    x="600"
+    y="195"
+    text-anchor="middle"
+    fill="#c7dbf5"
+    font-size="26"
+    font-weight="400"
+    font-family="Arial, Helvetica, sans-serif">
+    Native Song Request Integration for OBS
+  </text>
+
+  <!-- Legend -->
+  <text
+    x="600"
+    y="250"
+    text-anchor="middle"
+    fill="#60a5fa"
+    font-size="20"
+    letter-spacing="3"
+    font-weight="600"
+    font-family="Arial, Helvetica, sans-serif">
+    QUEUE • CONTROLS • HOTKEYS • NOW PLAYING
+  </text>
+</svg>
